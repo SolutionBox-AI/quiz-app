@@ -2,7 +2,6 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const router = express.Router();
-
 const uploadsPath = path.join(__dirname, '../uploads');
 
 // Get list of tests (folders/files in uploads)
@@ -65,8 +64,7 @@ router.post('/test/:testId/save', (req, res) => {
     });
   });
 });
-      responses.push({
-        ...submission,
+      responses.push({...submission,
         submittedAt: new Date().toISOString()
       });
 
@@ -74,8 +72,8 @@ router.post('/test/:testId/save', (req, res) => {
         if (err) return res.status(500).send({ error: 'Could not save response' });
         res.send({ message: 'Response saved successfully' });
       });
- //   });
-//  });
+   });
+  });
 // });
 
 module.exports = router;
