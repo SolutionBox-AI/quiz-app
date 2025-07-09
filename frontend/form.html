@@ -1,92 +1,115 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Admin - Create new test</title>
+  <title>Create Test Paper</title>
   <style>
-    body { font-family: Arial; padding: 20px; }
+    body { font-family: Arial; padding: 30px; }
     label { display: block; margin-top: 10px; }
-    input, textarea { width: 100%; padding: 6px; margin-top: 4px; }
-    button { margin-top: 20px; padding: 10px 20px; }
+    button { margin-top: 15px; }
+    .question-count { font-weight: bold; color: green; }
   </style>
 </head>
 <body>
-  <h2>Add a New Question</h2>
+  <script>
+    if (sessionStorage.getItem("role") !== "admin") {
+      alert("Access denied. Please login as admin.");
+      window.location.href = "index.html";
+    }
+  </script>
 
-  <label>Test ID (e.g., test1, test2):
-    <input type="text" id="testId" required />
-  </label>
+  <h2>📝 Create Test</h2>
 
-  <label>Question Text:
-    <textarea id="question" rows="3" required></textarea>
-  </label>
+  <label>Test Name (will be used as folder):</label>
+  <input type="text" id="testName" required />
 
-  <label>Option A:
-    <input type="text" id="optionA" required />
-  </label>
+  <div id="questionForm">
+    <h3>Add Question</h3>
+    <label>Question:</label>
+    <input type="text" id="question" style="width: 80%;" />
 
-  <label>Option B:
-    <input type="text" id="optionB" required />
-  </label>
+    <label>Option A:</label>
+    <input type="text" id="optA" />
+    <label>Option B:</label>
+    <input type="text" id="optB" />
+    <label>Option C:</label>
+    <input type="text" id="optC" />
+    <label>Option D:</label>
+    <input type="text" id="optD" />
 
-  <label>Option C:
-    <input type="text" id="optionC" required />
-  </label>
+    <label>Correct Answer (A/B/C/D):</label>
+    <input type="text" id="correct" maxlength="1" />
 
-  <label>Option D:
-    <input type="text" id="optionD" required />
-  </label>
+    <button onclick="addQuestion()">➕ Add Question</button>
+    <p class="question-count">Questions added: <span id="questionCount">0</span></p>
+  </div>
 
-  <label>Correct Answer (A, B, C or D):
-    <input type="text" id="correctAnswer" maxlength="1" required />
-  </label>
-
-  <button onclick="submitQuestion()">Submit Question</button>
-
-  <p id="message"></p>
+  <button onclick="saveTest()">💾 Save Test</button>
+  <button onclick="logout()">🔒 Logout</button>
 
   <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com";
+    const BASE_URL = "https://your-backend-url/api/quiz"; // replace with your backend URL
+    const questions = [];
 
-    function submitQuestion() {
-      const testId = document.getElementById('testId').value.trim();
-      const question = document.getElementById('question').value.trim();
-      const optionA = document.getElementById('optionA').value.trim();
-      const optionB = document.getElementById('optionB').value.trim();
-      const optionC = document.getElementById('optionC').value.trim();
-      const optionD = document.getElementById('optionD').value.trim();
-      const correctAnswer = document.getElementById('correctAnswer').value.trim().toUpperCase();
+    function addQuestion() {
+      const q = document.getElementById('question').value.trim();
+      const a = document.getElementById('optA').value.trim();
+      const b = document.getElementById('optB').value.trim();
+      const c = document.getElementById('optC').value.trim();
+      const d = document.getElementById('optD').value.trim();
+      const correct = document.getElementById('correct').value.trim().toUpperCase();
+      const testName = document.getElementById('testName').value.trim();
 
-      if (!['A', 'B', 'C', 'D'].includes(correctAnswer)) {
-        alert("Correct answer must be A, B, C, or D");
+      if (!q || !a || !b || !c || !d || !correct || !testName) {
+        alert("Please fill all fields.");
         return;
       }
 
-      const questionData = {
-        question,
+      const newQuestion = {
+        question: q,
         options: [
-          { label: 'A', text: optionA },
-          { label: 'B', text: optionB },
-          { label: 'C', text: optionC },
-          { label: 'D', text: optionD }
+          { label: "A", text: a },
+          { label: "B", text: b },
+          { label: "C", text: c },
+          { label: "D", text: d }
         ],
-        correctAnswer
+        correct
       };
 
-      fetch(`${BASE_URL}/api/quiz/test/${testId}`, {
+      questions.push(newQuestion);
+      document.getElementById('questionCount').textContent = questions.length;
+
+      // Clear form
+      ['question', 'optA', 'optB', 'optC', 'optD', 'correct'].forEach(id => document.getElementById(id).value = '');
+    }
+
+    function saveTest() {
+      const testName = document.getElementById('testName').value.trim();
+      if (!testName || questions.length === 0) {
+        alert("Enter test name and add at least one question.");
+        return;
+      }
+
+      // Save all questions at once
+      fetch(`${BASE_URL}/test/${testName}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(questionData)
+        body: JSON.stringify(questions)
       })
       .then(res => res.json())
       .then(data => {
-        document.getElementById('message').textContent = "✅ Question added successfully!";
-        document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+        alert("Test saved successfully!");
+        questions.length = 0;
+        document.getElementById('questionCount').textContent = 0;
       })
       .catch(err => {
-        console.error("Error:", err);
-        document.getElementById('message').textContent = "❌ Failed to add question.";
+        console.error("Error saving test", err);
+        alert("Failed to save test.");
       });
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = "index.html";
     }
   </script>
 </body>
