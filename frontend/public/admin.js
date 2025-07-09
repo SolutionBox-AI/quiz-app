@@ -1,4 +1,4 @@
-const BASE_URL = "https://your-backend-url:5000"; // replace with yours
+const BASE_URL = `https://quiz-app-4087.onrender.com`; // replace with yours
 
 function createTest() {
   const testId = document.getElementById('testId').value.trim();
