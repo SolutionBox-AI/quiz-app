@@ -5,36 +5,40 @@ const router = express.Router();
 
 const uploadsPath = path.join(__dirname, '../uploads');
 
-
-
-
 // Get list of tests (folders/files in uploads)
-router.get('/tests', (req, res) => {
-  fs.readdir(uploadsPath, (err, files) => {
+router.get('/tests', (req, res) => 
+  {
+  fs.readdir(uploadsPath, (err, files) => 
+    {
     if (err) return res.status(500).send({ error: 'Failed to read test list' });
 
-    const testFolders = files.filter(folder => {
+    const testFolders = files.filter(folder => 
+      {
       const filePath = path.join(uploadsPath, folder, 'questions.json');
       return fs.existsSync(filePath);
-    });
+       });
 
     res.send(testFolders);
-  });
-});
+    });
+ });
 
 module.exports = router;
 // Get questions for a specific test
-router.get('/test/:testId/questions', (req, res) => {
-  const testId = req.params.testId;
-  const questionsPath = path.join(__dirname, '../uploads', testId, 'questions.json');
+router.get('/test/:testId/questions', (req, res) => 
+  {
+   const testId = req.params.testId;
+   const questionsPath = path.join(__dirname, '../uploads', testId, 'questions.json');
 
-  fs.readFile(questionsPath, 'utf8', (err, data) => {
+    fs.readFile(questionsPath, 'utf8', (err, data) =>
+    {
     if (err) return res.status(404).send({ error: 'Questions not found for this test' });
 
-    try {
+    try 
+    {
       const questions = JSON.parse(data);
       res.send(questions);
-    } catch (e) {
+    } catch (e) 
+    {
       res.status(500).send({ error: 'Invalid JSON in questions file' });
     }
   });
@@ -61,7 +65,6 @@ router.post('/test/:testId/save', (req, res) => {
     });
   });
 });
-
       responses.push({
         ...submission,
         submittedAt: new Date().toISOString()
@@ -71,8 +74,8 @@ router.post('/test/:testId/save', (req, res) => {
         if (err) return res.status(500).send({ error: 'Could not save response' });
         res.send({ message: 'Response saved successfully' });
       });
-    });
-  });
-});
+ //   });
+//  });
+// });
 
 module.exports = router;
