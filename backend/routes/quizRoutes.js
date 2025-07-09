@@ -41,24 +41,26 @@ router.get('/test/:testId/questions', (req, res) => {
 });
 
 // Submit answers for a specific test
-router.post('/test/:testId/submit', (req, res) => {
+router.post('/test/:testId/save', (req, res) => {
   const testId = req.params.testId;
-  const submission = req.body;
-  const testFolder = path.join(__dirname, '../uploads', testId);
-  const responsesPath = path.join(testFolder, 'responses.json');
+  const questions = req.body;
 
-  fs.mkdir(testFolder, { recursive: true }, (err) => {
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return res.status(400).send({ error: 'Invalid question data' });
+  }
+
+  const testFolderPath = path.join(__dirname, '../uploads', testId);
+  const questionsPath = path.join(testFolderPath, 'questions.json');
+
+  fs.mkdir(testFolderPath, { recursive: true }, (err) => {
     if (err) return res.status(500).send({ error: 'Could not create test folder' });
 
-    fs.readFile(responsesPath, 'utf8', (err, data) => {
-      let responses = [];
-      if (!err && data) {
-        try {
-          responses = JSON.parse(data);
-        } catch (e) {
-          responses = [];
-        }
-      }
+    fs.writeFile(questionsPath, JSON.stringify(questions, null, 2), (err) => {
+      if (err) return res.status(500).send({ error: 'Failed to save questions' });
+      res.send({ message: 'Test saved successfully' });
+    });
+  });
+});
 
       responses.push({
         ...submission,
