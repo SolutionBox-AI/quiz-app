@@ -28,6 +28,8 @@
 
 <button onclick="loadResponses()">🔍 View Responses</button>
 <button onclick="downloadResponses()">⬇️ Download Responses</button>
+<button onclick="loadFormhtml()">Create Test</button>  
+ 
 <button onclick="logout()">🚪 Logout</button>
 
 <div id="responseTable">
@@ -48,6 +50,12 @@
 <script>
   const BASE_URL = 'https://quiz-app-4087.onrender.com'; // 🔁 Replace with your backend URL
 
+  //LOADING FORM HTML FOR TEST CREATION
+  function loadFormhtlml()
+    { 
+      cpnsole.log("Form Loading")
+      window.location.href = "form.html";
+    }
   // Load available test folders
   window.onload = () => {
     console.log("Loading test list...");
