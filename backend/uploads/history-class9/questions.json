@@ -1,0 +1,20 @@
+[
+  {
+    "question": "What is the capital of Rajasthan?",
+    "options": [
+      { "label": "A", "text": "Jaipur" },
+      { "label": "B", "text": "Udaipur" },
+      { "label": "C", "text": "Jodhpur" },
+      { "label": "D", "text": "Ajmer" }
+    ]
+  },
+  {
+    "question": "Who was the first President of India?",
+    "options": [
+      { "label": "A", "text": "Mahatma Gandhi" },
+      { "label": "B", "text": "Dr. Rajendra Prasad" },
+      { "label": "C", "text": "Jawaharlal Nehru" },
+      { "label": "D", "text": "Subhash Chandra Bose" }
+    ]
+  }
+]

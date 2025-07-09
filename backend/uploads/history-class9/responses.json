@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Abhishek Bhardwaj",
+    "town": "Noida",
+    "code": "12345",
+    "answers": [
+      "D",
+      "D"
+    ],
+    "submittedAt": "2025-07-09T05:54:06.559Z"
+  },
+  {
+    "name": "Abhishek Bhardwaj",
+    "town": "Noida",
+    "code": "12345",
+    "answers": [
+      "A",
+      "C"
+    ],
+    "submittedAt": "2025-07-09T08:50:28.390Z"
+  }
+]

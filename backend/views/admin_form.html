@@ -1,0 +1,19 @@
+
+<!DOCTYPE html>
+<html>
+<head><title>Add Questions Manually</title></head>
+<body>
+<h2>Add a New Question</h2>
+<form method="post" action="/api/quiz/add-question">
+    Question: <br><textarea name="question" rows="3" cols="50" required></textarea><br><br>
+    Option A: <input type="text" name="optionA" required><br>
+    Option B: <input type="text" name="optionB" required><br>
+    Option C: <input type="text" name="optionC" required><br>
+    Option D: <input type="text" name="optionD" required><br><br>
+    Correct Option (A/B/C/D): <input type="text" name="correct" required pattern="[A-Da-d]"><br><br>
+    <input type="submit" value="Add Question">
+</form>
+<br>
+<a href="/">Back to Admin Panel</a>
+</body>
+</html>

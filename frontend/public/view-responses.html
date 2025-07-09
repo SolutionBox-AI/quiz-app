@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>View & Download Responses</title>
+  <style>
+    body { font-family: Arial; margin: 40px; }
+  </style>
+</head>
+<body>
+  <script>
+    if (sessionStorage.getItem("role") !== "admin") {
+      alert("Access denied. Please login as admin.");
+      window.location.href = "index.html";
+    }
+  </script>
+
+  <h2>📊 View & Download Quiz Responses</h2>
+
+  <label for="testSelect">Select Test:</label>
+  <select id="testSelect">
+    <option value="">--Loading tests--</option>
+  </select>
+  <button onclick="downloadResponses()">Download Responses</button>
+  <button onclick="logout()">Logout</button>
+
+  <script>
+    const BASE_URL = "https://78a6cd20-f2fa-437f-8c99-3b4e03cede4f-00-3qjhjllz9w6ob.pike.replit.dev:5000/"; // Replace with your backend URL
+
+    // Load available test folders into dropdown
+    window.onload = () => {
+      console.log(BASE_URL);
+      fetch(`${BASE_URL}/api/quiz/tests`)
+        .then(res => res.json())
+        .then(tests => {
+          const select = document.getElementById('testSelect');
+          select.innerHTML = '<option value="">--Select Test--</option>';
+          tests.forEach(test => {
+            const opt = document.createElement('option');
+            opt.value = test;
+            opt.textContent = test;
+            select.appendChild(opt);
+          });
+        })
+        .catch(err => {
+          alert("Failed to load test list.");
+          console.error(err);
+        });
+    };
+
+    function downloadResponses() {
+      const testId = document.getElementById('testSelect').value;
+      if (!testId) return alert("Please select a test.");
+
+      const url = `${BASE_URL}/uploads/${testId}/responses.json`;
+      window.open(url, '_blank');
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = "index.html";
+    }
+  </script>
+</body>
+</html>

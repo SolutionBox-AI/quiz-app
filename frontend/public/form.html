@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Add Question</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    label { display: block; margin-top: 10px; }
+    input, textarea { width: 100%; padding: 6px; margin-top: 4px; }
+    button { margin-top: 20px; padding: 10px 20px; }
+  </style>
+</head>
+<body>
+  <h2>Add a New Question</h2>
+
+  <label>Test ID (e.g., test1, test2):
+    <input type="text" id="testId" required />
+  </label>
+
+  <label>Question Text:
+    <textarea id="question" rows="3" required></textarea>
+  </label>
+
+  <label>Option A:
+    <input type="text" id="optionA" required />
+  </label>
+
+  <label>Option B:
+    <input type="text" id="optionB" required />
+  </label>
+
+  <label>Option C:
+    <input type="text" id="optionC" required />
+  </label>
+
+  <label>Option D:
+    <input type="text" id="optionD" required />
+  </label>
+
+  <label>Correct Answer (A, B, C or D):
+    <input type="text" id="correctAnswer" maxlength="1" required />
+  </label>
+
+  <button onclick="submitQuestion()">Submit Question</button>
+
+  <p id="message"></p>
+
+  <script>
+    const BASE_URL = "https://78a6cd20-f2fa-437f-8c99-3b4e03cede4f-00-3qjhjllz9w6ob.pike.replit.dev";
+
+    function submitQuestion() {
+      const testId = document.getElementById('testId').value.trim();
+      const question = document.getElementById('question').value.trim();
+      const optionA = document.getElementById('optionA').value.trim();
+      const optionB = document.getElementById('optionB').value.trim();
+      const optionC = document.getElementById('optionC').value.trim();
+      const optionD = document.getElementById('optionD').value.trim();
+      const correctAnswer = document.getElementById('correctAnswer').value.trim().toUpperCase();
+
+      if (!['A', 'B', 'C', 'D'].includes(correctAnswer)) {
+        alert("Correct answer must be A, B, C, or D");
+        return;
+      }
+
+      const questionData = {
+        question,
+        options: [
+          { label: 'A', text: optionA },
+          { label: 'B', text: optionB },
+          { label: 'C', text: optionC },
+          { label: 'D', text: optionD }
+        ],
+        correctAnswer
+      };
+
+      fetch(`${BASE_URL}/api/quiz/test/${testId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(questionData)
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('message').textContent = "✅ Question added successfully!";
+        document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+      })
+      .catch(err => {
+        console.error("Error:", err);
+        document.getElementById('message').textContent = "❌ Failed to add question.";
+      });
+    }
+  </script>
+</body>
+</html>

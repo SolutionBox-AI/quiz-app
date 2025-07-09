@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard - Quiz App</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    textarea { width: 100%; height: 200px; }
+    label, select, button { margin-top: 10px; display: block; }
+  </style>
+</head>
+<body>
+
+  <h2>📋 Admin Dashboard</h2>
+
+  <section>
+    <h3>➕ Add New Test</h3>
+    <label>Test Name: <input type="text" id="testName" placeholder="e.g., test1" /></label>
+    <label>Test JSON:
+      <textarea id="testJSON" placeholder='Paste valid JSON here...'></textarea>
+    </label>
+    <button onclick="uploadTest()">Upload Test</button>
+  </section>
+
+  <hr>
+
+  <section>
+    <h3>📂 Existing Tests</h3>
+    <button onclick="loadTests()">Refresh List</button>
+    <select id="testList"></select>
+
+    <button onclick="downloadResponses()">Download Responses</button>
+    <button onclick="previewQuestions()">Preview Questions</button>
+
+    <pre id="previewBox" style="margin-top: 20px; background: #f3f3f3; padding: 10px;"></pre>
+  </section>
+
+  <script>
+    const BASE_URL = "https://78a6cd20-f2fa-437f-8c99-3b4e03cede4f-00-3qjhjllz9w6ob.pike.replit.dev";
+
+    function loadTests() {
+      fetch(`${BASE_URL}/api/quiz/tests`)
+        .then(res => res.json())
+        .then(tests => {
+          const dropdown = document.getElementById('testList');
+          dropdown.innerHTML = '';
+          tests.forEach(test => {
+            const opt = document.createElement('option');
+            opt.value = test;
+            opt.textContent = test.replace('.json', '');
+            dropdown.appendChild(opt);
+          });
+        });
+    }
+
+    function uploadTest() {
+      const name = document.getElementById('testName').value.trim();
+      const content = document.getElementById('testJSON').value.trim();
+
+      if (!name || !content) {
+        alert("Please provide both test name and JSON content.");
+        return;
+      }
+
+      try {
+        JSON.parse(content); // Validate JSON
+      } catch {
+        alert("Invalid JSON format.");
+        return;
+      }
+
+      fetch(`${BASE_URL}/api/quiz/create-test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, content })
+      })
+        .then(res => res.json())
+        .then(msg => {
+          alert(msg.message || "Test uploaded.");
+          loadTests();
+        })
+        .catch(err => alert("Error uploading test"));
+    }
+
+    function downloadResponses() {
+      const test = document.getElementById('testList').value;
+      const url = `${BASE_URL}/api/quiz/test/${test}/responses`;
+
+      window.open(url, '_blank'); // Download the .json file
+    }
+
+    function previewQuestions() {
+      const test = document.getElementById('testList').value;
+      fetch(`${BASE_URL}/api/quiz/test/${test}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('previewBox').textContent = JSON.stringify(data, null, 2);
+        });
+    }
+
+    window.onload = loadTests;
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add Quiz Question</title>
+</head>
+<body>
+  <h2>Add New Question</h2>
+  <form action="/api/quiz/form" method="POST">
+    <label>Question: <input type="text" name="question" required /></label><br><br>
+
+    <label>Option A: <input type="text" name="optionA" required /></label><br>
+    <label>Option B: <input type="text" name="optionB" required /></label><br>
+    <label>Option C: <input type="text" name="optionC" required /></label><br>
+    <label>Option D: <input type="text" name="optionD" required /></label><br><br>
+
+    <label>Correct Answer:
+      <select name="correctAnswer" required>
+        <option value="">--Select--</option>
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+      </select>
+    </label><br><br>
+
+    <button type="submit">Save Question</button>
+  </form>
+</body>
+</html>

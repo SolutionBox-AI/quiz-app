@@ -1,0 +1,90 @@
+[
+  {
+    "question": "When India got its Independence",
+    "options": [
+      {
+        "label": "A",
+        "text": "2011"
+      },
+      {
+        "label": "B",
+        "text": "2000"
+      },
+      {
+        "label": "C",
+        "text": "1947"
+      },
+      {
+        "label": "D",
+        "text": "1945"
+      }
+    ],
+    "correctAnswer": "C"
+  },
+  {
+    "question": "Abhi",
+    "options": [
+      {
+        "label": "A",
+        "text": "2011"
+      },
+      {
+        "label": "B",
+        "text": "2000"
+      },
+      {
+        "label": "C",
+        "text": "1978"
+      },
+      {
+        "label": "D",
+        "text": "2013"
+      }
+    ],
+    "correctAnswer": "C"
+  },
+  {
+    "question": "Republic Day of India",
+    "options": [
+      {
+        "label": "A",
+        "text": "2011"
+      },
+      {
+        "label": "B",
+        "text": "1950"
+      },
+      {
+        "label": "C",
+        "text": "1947"
+      },
+      {
+        "label": "D",
+        "text": "1945"
+      }
+    ],
+    "correctAnswer": "B"
+  },
+  {
+    "question": "Capital of Rajasthan",
+    "options": [
+      {
+        "label": "A",
+        "text": "Jaipur"
+      },
+      {
+        "label": "B",
+        "text": "Udaipur"
+      },
+      {
+        "label": "C",
+        "text": "Bikaner"
+      },
+      {
+        "label": "D",
+        "text": "Jodhpur"
+      }
+    ],
+    "correctAnswer": "A"
+  }
+]

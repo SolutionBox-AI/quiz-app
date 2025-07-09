@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login - Quiz App</title>
+  <style>
+    body { font-family: Arial, margin: 40px; }
+    input { margin: 5px 0; }
+    #message { color: red; }
+  </style>
+</head>
+<body>
+  
+  <h2>Login - Online Quiz App</h2>
+
+  <label>Username: <input type="text" id="username" /></label><br>
+  <label>Password: <input type="password" id="password" /></label><br>
+  <button onclick="login()">Login</button>
+
+  
+
+  <p id="message"></p>
+
+  <script>
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = "index.html";
+    }
+    
+    function login() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const message = document.getElementById("message");
+
+      if (username === "admin" && password === "admin123") {
+        sessionStorage.setItem("role", "admin");
+        window.location.href = "admin.html";
+      } else if (username === "student" && password === "student123") {
+        sessionStorage.setItem("role", "student");
+        window.location.href = "student.html";
+      } else {
+        message.textContent = "Invalid credentials. Try again.";
+      }
+    }
+  </script>
+</body>
+</html>

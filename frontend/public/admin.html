@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin - View & Download Responses</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    #responseTable { display: none; }
+  </style>
+</head>
+<body>
+
+<script>
+  if (sessionStorage.getItem("role") !== "admin") {
+    alert("Access denied. Please login as admin.");
+    window.location.href = "index.html";
+  }
+</script>
+
+<h2>📋 Admin Dashboard - View & Download Responses</h2>
+
+<label for="testSelect">Select Test:</label>
+<select id="testSelect">
+  <option id="onLoad">--Loading tests--</option>
+</select>
+
+<button onclick="loadResponses()">🔍 View Responses</button>
+<button onclick="downloadResponses()">⬇️ Download Responses</button>
+<button onclick="logout()">🚪 Logout</button>
+
+<div id="responseTable">
+  <h3>📊 Student Responses</h3>
+  <table id="table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Town</th>
+        <th>Code</th>
+        <th>Answers</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<script>
+  const BASE_URL = 'https://78a6cd20-f2fa-437f-8c99-3b4e03cede4f-00-3qjhjllz9w6ob.pike.replit.dev:5000'; // 🔁 Replace with your backend URL
+
+  // Load available test folders
+  window.onload = () => {
+    console.log("Loading test list...");
+    fetch(`${BASE_URL}/api/quiz/tests`)
+      .then(res => res.json())
+      .then(tests => {
+        const select = document.getElementById('testSelect');
+        select.innerHTML = '<option value="">--Select Test--</option>';
+        tests.forEach(test => {
+          const opt = document.createElement('option');
+          opt.value = test;
+          opt.textContent = test;
+          select.appendChild(opt);
+        });
+      })
+      .catch(err => {
+        alert("Failed to load test list.");
+        console.error(err);
+      });
+  };
+
+  function loadResponses() {
+    const testId = document.getElementById('testSelect').value;
+    if (!testId) return alert("Please select a test.");
+
+    fetch(`${BASE_URL}/uploads/${testId}/responses.json`)
+      .then(res => {
+        if (!res.ok) throw new Error("File not found or corrupt.");
+        return res.json();
+      })
+      .then(data => {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = ''; // Clear old rows
+
+        if (data.length === 0) {
+          alert("No responses found for this test.");
+          document.getElementById('responseTable').style.display = 'none';
+          return;
+        }
+
+        data.forEach(entry => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${entry.name}</td>
+            <td>${entry.town}</td>
+            <td>${entry.code}</td>
+            <td>${(entry.answers || []).join(', ')}</td>
+          `;
+          tbody.appendChild(row);
+        });
+
+        document.getElementById('responseTable').style.display = 'block';
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Error loading responses.");
+        document.getElementById('responseTable').style.display = 'none';
+      });
+  }
+
+  function downloadResponses() {
+    const testId = document.getElementById('testSelect').value;
+    if (!testId) return alert("Please select a test.");
+
+    const url = `${BASE_URL}/uploads/${testId}/responses.json`;
+    window.open(url, '_blank');
+  }
+
+  function logout() {
+    sessionStorage.clear();
+    window.location.href = "index.html";
+  }
+</script>
+
+</body>
+</html>

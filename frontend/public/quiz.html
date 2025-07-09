@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Student Quiz</title>
+  <style>
+    body { font-family: Arial; margin: 40px; }
+    .question-box { display: none; }
+    .active { display: block; }
+  </style>
+
+  <!-- ✅ Correct way to load script with defer -->
+  <script src="script.js" defer></script>
+</head>
+
+<body>
+  <h2>Student Quiz</h2>
+
+  <div id="intro">
+    <label>Name: <input id="name" /></label><br>
+    <label>Town: <input id="town" /></label><br>
+    <label>Code: <input id="code" /></label><br>
+
+    <label>Select Test: 
+      <select id="testSelect" onchange="onTestChange(this)">
+        <option value="">Loading...</option>
+      </select>
+    </label><br><br>
+
+    <button onclick="startQuiz()">Start Quiz</button>
+    <button onclick="logout()">Logout</button>
+    <script>
+      function logout() {
+        sessionStorage.clear();
+        window.location.href = "index.html";
+      }
+
+
+    </script>
+  </div>
+
+  <div id="quiz" style="display:none;">
+    <div id="questionContainer"></div>
+    <button onclick="prev()">Previous</button>
+    <button onclick="next()">Next</button>
+    <button onclick="submitQuiz()" id="submitBtn" style="display:none;">Submit</button>
+    <button onclick="goToStart()">Go To Start</button>
+  </div>
+
+  <div id="thankyou" style="display:none;">
+    <h3>Thank you for submitting!</h3>
+    <button onclick="goToStart()">Give Another Test</button>
+  </div>
+</body>
+</html>
