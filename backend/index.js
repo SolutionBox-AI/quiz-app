@@ -1,39 +1,41 @@
+require('dotenv').config(); // Load env variables
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const mongoose = require('mongoose');
-require('dotenv').config();
-
-const quizRoutes = require('./routes/quizRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('✅ Connected to MongoDB'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
-
-// Middleware
+// Middlewares
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (if needed)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// MongoDB Connection
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('✅ MongoDB connected'))
+.catch((err) => console.error('❌ MongoDB connection error:', err));
 
-// API Routes
-app.use('/api/quiz', quizRoutes);
+// Test Schema & Model
+const TestSchema = new mongoose.Schema({
+  title: String,
+  questions: Array,
+});
+const Test = mongoose.model('Test', TestSchema);
 
-// Root route
-app.get('/', (req, res) => {
-  res.send('<h2>🎉 Quiz App Backend is Running</h2>');
+// Sample Route
+app.get('/api/tests', async (req, res) => {
+  try {
+    const tests = await Test.find();
+    res.json(tests);
+  } catch (err) {
+    console.error('Error fetching tests:', err);
+    res.status(500).json({ error: 'Failed to load tests' });
+  }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`✅ Server running at http://localhost:${PORT}`);
-});
+// Start Server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
