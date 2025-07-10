@@ -3,27 +3,21 @@ const BASE_URL = "https://quiz-app-4087.onrender.com";
 let questions = [], current = 0, answers = [], selectedTest = "";
 
 // Load test names from backend on page load
-function loadTests() {
-  console.log("loadTests triggered");
-
-  fetch(`${BASE_URL}/api/quiz/tests`)
-    .then(res => res.json())
-    .then(tests => {
-      console.log("Fetched tests:", tests);
-      const select = document.getElementById('testSelect');
-      select.innerHTML = '<option value="">Select a test</option>';
-      tests.forEach(test => {
-        const option = document.createElement('option');
-        option.value = test.replace('.json', '');
-        option.textContent = test.replace('.json', '');
-        select.appendChild(option);
-      });
-    })
-    .catch(err => {
-      console.error("Error loading tests", err);
-      alert("Failed to load test list");
-    });
-}
+    window.onload = () => {
+      fetch(`${BASE_URL}/api/quiz/tests`)
+        .then(res => res.json())
+        .then(tests => {
+          const sel = document.getElementById('testSelect');
+          sel.innerHTML = '<option value="">--Select Test--</option>';
+          tests.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = t;
+            sel.appendChild(opt);
+          });
+        })
+        .catch(err => alert("Failed to load test list."));
+    };
 
 function onTestChange(sel) {
   selectedTest = sel.value;
