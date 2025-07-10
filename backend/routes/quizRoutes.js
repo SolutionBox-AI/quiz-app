@@ -59,41 +59,52 @@ router.post('/test/:testId/save', (req, res) => {
 });
 
 // ✅ 4. Submit answers (student side)
+// Submit and score answers
 router.post('/test/:testId/submit', (req, res) => {
   const testId = req.params.testId;
   const submission = req.body;
 
-  if (!submission || !submission.name || !submission.town || !submission.code || !submission.answers) {
-    return res.status(400).send({ error: 'Incomplete submission' });
-  }
+  const questionsPath = path.join(__dirname, '../uploads', testId, 'questions.json');
+  const responsesPath = path.join(__dirname, '../uploads', testId, 'responses.json');
 
-  const testFolderPath = path.join(uploadsPath, testId);
-  const responsesPath = path.join(testFolderPath, 'responses.json');
+  fs.readFile(questionsPath, 'utf8', (err, questionData) => {
+    if (err) return res.status(404).send({ error: 'Test questions not found' });
 
-  // Ensure folder exists
-  fs.mkdir(testFolderPath, { recursive: true }, (err) => {
-    if (err) return res.status(500).send({ error: 'Could not create folder for responses' });
+    let questions;
+    try {
+      questions = JSON.parse(questionData);
+    } catch {
+      return res.status(500).send({ error: 'Invalid questions format' });
+    }
 
-    // Read existing responses
+    // Calculate score
+    let score = 0;
+    submission.answers.forEach((ans, idx) => {
+      if (questions[idx] && questions[idx].correct === ans) {
+        score++;
+      }
+    });
+
+    const newResponse = {
+      name: submission.name,
+      town: submission.town,
+      code: submission.code,
+      answers: submission.answers,
+      score,
+      submittedAt: new Date().toISOString()
+    };
+
     fs.readFile(responsesPath, 'utf8', (err, data) => {
       let responses = [];
       if (!err && data) {
-        try {
-          responses = JSON.parse(data);
-        } catch (e) {
-          responses = [];
-        }
+        try { responses = JSON.parse(data); } catch { }
       }
 
-      // Add new response
-      responses.push({
-        ...submission,
-        submittedAt: new Date().toISOString()
-      });
+      responses.push(newResponse);
 
       fs.writeFile(responsesPath, JSON.stringify(responses, null, 2), (err) => {
         if (err) return res.status(500).send({ error: 'Could not save response' });
-        res.send({ message: 'Response saved successfully' });
+        res.send({ message: 'Response saved successfully', score });
       });
     });
   });
