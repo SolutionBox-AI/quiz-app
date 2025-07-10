@@ -34,6 +34,7 @@ function startQuiz() {
 
   console.log("Selected test:", selectedTest);
 
+
   fetch(`${BASE_URL}/api/quiz/test/${selectedTest}/questions`)
     .then(res => res.json())
     .then(data => {
@@ -114,6 +115,7 @@ function submitQuiz() {
   }
 
   fetch(`${BASE_URL}/api/quiz/test/${selectedTest}/submit`, {
+    console.log(selectedTest);
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
