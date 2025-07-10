@@ -95,16 +95,21 @@ function saveTest() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(questions)
   })
-    .then(res => res.json())
-    .then(data => {
-      alert(data.message || "Saved!");
-    })
-    .catch(err => {
-      console.error("Error saving test", err);
-      alert("Failed to save test");
-    });
+  .then(async res => {
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Unknown error");
+    }
+    return res.json();
+  })
+  .then(data => {
+    alert(data.message || "Test saved successfully!");
+  })
+  .catch(err => {
+    console.error("Error saving test:", err);
+    alert("Test saving failed: " + err.message);
+  });
 }
-
 
     function logout() {
       sessionStorage.clear();
