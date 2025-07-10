@@ -20,8 +20,9 @@
   <h2>📝 Create Test</h2>
 
   <label>Test Name (will be used as folder):</label>
-  <input type="text" id="testName" required />
 
+<input type="text" id="testName" placeholder="Enter Test Name" />
+  
   <div id="questionForm">
     <h3>Add Question</h3>
     <label>Question:</label>
@@ -82,31 +83,31 @@
       ['question', 'optA', 'optB', 'optC', 'optD', 'correct'].forEach(id => document.getElementById(id).value = '');
     }
 
-    function saveTest() {
-      
-      const testName = document.getElementById('testName').value.trim();
-      if (!testName || questions.length === 0) {
-        alert("Enter test name and add at least one question.");
-        return;
-      }
+function saveTest() {
+  const testId = document.getElementById("testName").value.trim();
+  if (!testId || questions.length === 0) {
+    alert("Please enter test name and add questions");
+    return;
+  }
 
-      // Save all questions at once
-      fetch(`${BASE_URL}/test/${testName}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(questions)
-      })
-      .then(res => res.json())
-      .then(data => {
-        alert("Test saved successfully!");
-        questions.length = 0;
-        document.getElementById('questionCount').textContent = 0;
-      })
-      .catch(err => {
-        console.error("Error saving test", err);
-        alert("Failed to save test.");
-      });
-    }
+  fetch(`${BASE_URL}/api/quiz/test/${testId}/save`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(questions)
+  })
+  .then(res => res.json())
+  .then(data => {
+    alert("✅ " + data.message);
+    questions = []; // Clear after save
+    questionCount = 0;
+    document.getElementById("count").textContent = questionCount;
+    document.getElementById("testName").value = "";
+  })
+  .catch(err => {
+    console.error("❌ Error saving test", err);
+    alert("Failed to save test");
+  });
+}
 
     function logout() {
       sessionStorage.clear();
