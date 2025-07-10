@@ -38,6 +38,7 @@ router.get('/test/:testId/questions', (req, res) => {
 });
 
 // 🚀 Save test questions (Admin side)
+// Save questions for a test
 router.post('/test/:testId/save', (req, res) => {
   const testId = req.params.testId;
   const questions = req.body;
@@ -50,15 +51,12 @@ router.post('/test/:testId/save', (req, res) => {
   const questionsPath = path.join(testFolderPath, 'questions.json');
 
   fs.mkdir(testFolderPath, { recursive: true }, (err) => {
-    if (err) {
-      return res.status(500).send({ error: 'Could not create test folder' });
-    }
+    if (err) return res.status(500).send({ error: 'Could not create folder' });
 
     fs.writeFile(questionsPath, JSON.stringify(questions, null, 2), (err) => {
-      if (err) {
-        return res.status(500).send({ error: 'Failed to save questions' });
-      }
-      return res.send({ message: '✅ Test saved successfully' });
+      if (err) return res.status(500).send({ error: 'Could not write file' });
+
+      res.send({ message: '✅ Test saved successfully' });
     });
   });
 });
