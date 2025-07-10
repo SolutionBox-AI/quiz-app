@@ -84,3 +84,18 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
+// Example insertion code using MongoDB native driver
+db.tests.insertMany([
+  {
+    question: "What is the capital of France?",
+    options: ["Berlin", "Madrid", "Paris", "London"],
+    correctAnswer: "Paris"
+  },
+  {
+    question: "Which planet is known as the Red Planet?",
+    options: ["Earth", "Mars", "Jupiter", "Saturn"],
+    correctAnswer: "Mars"
+  }
+]);
+
