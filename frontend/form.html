@@ -1,89 +1,53 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Create Test Paper</title>
-  <style>
-    body { font-family: Arial; padding: 30px; }
-    label { display: block; margin-top: 10px; }
-    button { margin-top: 15px; }
-    .question-count { font-weight: bold; color: green; }
-  </style>
-</head>
-<body>
-  <script>
-    if (sessionStorage.getItem("role") !== "admin") {
-      alert("Access denied. Please login as admin.");
-      window.location.href = "index.html";
-    }
-  </script>
+<script>
+const BASE_URL = "https://your-backend-url.onrender.com"; // ← Replace with actual Render backend URL
+let questions = [];
+let currentTestId = "";
 
-  <h2>📝 Create Test</h2>
+// Called when test name is entered
+function setTestId() {
+  currentTestId = document.getElementById("testId").value.trim();
+  document.getElementById("questionCount").textContent = `${questions.length} question(s) added`;
+}
 
-  <label>Test Name (will be used as folder):</label>
+// Called on Add Question
+function addQuestion() {
+  const question = document.getElementById("question").value.trim();
+  const optA = document.getElementById("optA").value.trim();
+  const optB = document.getElementById("optB").value.trim();
+  const optC = document.getElementById("optC").value.trim();
+  const optD = document.getElementById("optD").value.trim();
+  const correct = document.querySelector("input[name='correct']:checked");
 
-<input type="text" id="testName" placeholder="Enter Test Name" />
-  
-  <div id="questionForm">
-    <h3>Add Question</h3>
-    <label>Question:</label>
-    <input type="text" id="question" style="width: 80%;" />
+  if (!question || !optA || !optB || !optC || !optD || !correct) {
+    alert("Please fill all fields and select correct option.");
+    return;
+  }
 
-    <label>Option A:</label>
-    <input type="text" id="optA" />
-    <label>Option B:</label>
-    <input type="text" id="optB" />
-    <label>Option C:</label>
-    <input type="text" id="optC" />
-    <label>Option D:</label>
-    <input type="text" id="optD" />
+  const newQ = {
+    question,
+    options: [
+      { label: "A", text: optA },
+      { label: "B", text: optB },
+      { label: "C", text: optC },
+      { label: "D", text: optD }
+    ],
+    answer: correct.value
+  };
 
-    <label>Correct Answer (A/B/C/D):</label>
-    <input type="text" id="correct" maxlength="1" />
+  questions.push(newQ);
 
-    <button onclick="addQuestion()">➕ Add Question</button>
-    <p class="question-count">Questions added: <span id="questionCount">0</span></p>
-  </div>
+  // Reset form
+  document.getElementById("question").value = "";
+  document.getElementById("optA").value = "";
+  document.getElementById("optB").value = "";
+  document.getElementById("optC").value = "";
+  document.getElementById("optD").value = "";
+  document.querySelector("input[name='correct']:checked").checked = false;
 
-  <button onclick="saveTest()">💾 Save Test</button>
-  <button onclick="logout()">🔒 Logout</button>
+  document.getElementById("questionCount").textContent = `${questions.length} question(s) added`;
+}
 
-  <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com"; // replace with your backend URL
-    const questions = [];
-
-    function addQuestion() {
-      const q = document.getElementById('question').value.trim();
-      const a = document.getElementById('optA').value.trim();
-      const b = document.getElementById('optB').value.trim();
-      const c = document.getElementById('optC').value.trim();
-      const d = document.getElementById('optD').value.trim();
-      const correct = document.getElementById('correct').value.trim().toUpperCase();
-      const testName = document.getElementById('testName').value.trim();
-
-      if (!q || !a || !b || !c || !d || !correct || !testName) {
-        alert("Please fill all fields.");
-        return;
-      }
-
-      const newQuestion = {
-        question: q,
-        options: [
-          { label: "A", text: a },
-          { label: "B", text: b },
-          { label: "C", text: c },
-          { label: "D", text: d }
-        ],
-        correct
-      };
-
-      questions.push(newQuestion);
-      document.getElementById('questionCount').textContent = questions.length;
-
-      // Clear form
-      ['question', 'optA', 'optB', 'optC', 'optD', 'correct'].forEach(id => document.getElementById(id).value = '');
-    }
-
-// To save test
+// Save test to backend
 function saveTest() {
   if (!currentTestId || questions.length === 0) {
     alert("No test name or no questions.");
@@ -98,13 +62,13 @@ function saveTest() {
     .then(response => {
       if (!response.ok) {
         return response.json().then(err => {
-          throw new Error(err.error || "Unknown error while saving test");
+          throw new Error(err.error || "Unknown error");
         });
       }
       return response.json();
     })
     .then(data => {
-      alert(data.message || "✅ Test saved successfully!");
+      alert(data.message || "✅ Test saved successfully");
     })
     .catch(err => {
       console.error("❌ Error:", err);
@@ -112,11 +76,9 @@ function saveTest() {
     });
 }
 
-
-    function logout() {
-      sessionStorage.clear();
-      window.location.href = "index.html";
-    }
-  </script>
-</body>
-</html>
+// Logout function
+function logout() {
+  sessionStorage.clear();
+  window.location.href = "index.html";
+}
+</script>
