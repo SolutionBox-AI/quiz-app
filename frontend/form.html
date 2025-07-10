@@ -1,84 +1,24 @@
-<script>
-const BASE_URL = "https://your-backend-url.onrender.com"; // ← Replace with actual Render backend URL
-let questions = [];
-let currentTestId = "";
+<body>
+  <h2>Create Test</h2>
+  <label>Test Name: <input type="text" id="testId" onchange="setTestId()"></label><br><br>
 
-// Called when test name is entered
-function setTestId() {
-  currentTestId = document.getElementById("testId").value.trim();
-  document.getElementById("questionCount").textContent = `${questions.length} question(s) added`;
-}
+  <label>Question: <input type="text" id="question"></label><br>
+  <label>Option A: <input type="text" id="optA"></label><br>
+  <label>Option B: <input type="text" id="optB"></label><br>
+  <label>Option C: <input type="text" id="optC"></label><br>
+  <label>Option D: <input type="text" id="optD"></label><br>
+  
+  <label><input type="radio" name="correct" value="A"> A</label>
+  <label><input type="radio" name="correct" value="B"> B</label>
+  <label><input type="radio" name="correct" value="C"> C</label>
+  <label><input type="radio" name="correct" value="D"> D</label><br><br>
 
-// Called on Add Question
-function addQuestion() {
-  const question = document.getElementById("question").value.trim();
-  const optA = document.getElementById("optA").value.trim();
-  const optB = document.getElementById("optB").value.trim();
-  const optC = document.getElementById("optC").value.trim();
-  const optD = document.getElementById("optD").value.trim();
-  const correct = document.querySelector("input[name='correct']:checked");
+  <button onclick="addQuestion()">Add Question</button>
+  <button onclick="saveTest()">Save Test</button>
+  <button onclick="logout()">Logout</button><br><br>
 
-  if (!question || !optA || !optB || !optC || !optD || !correct) {
-    alert("Please fill all fields and select correct option.");
-    return;
-  }
+  <div id="questionCount">0 question(s) added</div>
 
-  const newQ = {
-    question,
-    options: [
-      { label: "A", text: optA },
-      { label: "B", text: optB },
-      { label: "C", text: optC },
-      { label: "D", text: optD }
-    ],
-    answer: correct.value
-  };
+  <!-- Script from step 1 comes here -->
+</body>
 
-  questions.push(newQ);
-
-  // Reset form
-  document.getElementById("question").value = "";
-  document.getElementById("optA").value = "";
-  document.getElementById("optB").value = "";
-  document.getElementById("optC").value = "";
-  document.getElementById("optD").value = "";
-  document.querySelector("input[name='correct']:checked").checked = false;
-
-  document.getElementById("questionCount").textContent = `${questions.length} question(s) added`;
-}
-
-// Save test to backend
-function saveTest() {
-  if (!currentTestId || questions.length === 0) {
-    alert("No test name or no questions.");
-    return;
-  }
-
-  fetch(`${BASE_URL}/api/quiz/test/${currentTestId}/save`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(questions)
-  })
-    .then(response => {
-      if (!response.ok) {
-        return response.json().then(err => {
-          throw new Error(err.error || "Unknown error");
-        });
-      }
-      return response.json();
-    })
-    .then(data => {
-      alert(data.message || "✅ Test saved successfully");
-    })
-    .catch(err => {
-      console.error("❌ Error:", err);
-      alert("❌ Test saving failed: " + err.message);
-    });
-}
-
-// Logout function
-function logout() {
-  sessionStorage.clear();
-  window.location.href = "index.html";
-}
-</script>
