@@ -10,8 +10,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-
-
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
@@ -79,23 +77,44 @@ app.get('/api/seed', async (req, res) => {
   }
 });
 
+// Bulk seed route
+app.get('/api/seed-tests', async (req, res) => {
+  try {
+    const testData = [
+      {
+        question: "What is the capital of France?",
+        options: ["Berlin", "Madrid", "Paris", "London"],
+        correctAnswer: "Paris"
+      },
+      {
+        question: "Which planet is known as the Red Planet?",
+        options: ["Earth", "Mars", "Jupiter", "Saturn"],
+        correctAnswer: "Mars"
+      }
+    ];
+
+    const formattedData = testData.map(q => ({
+      title: 'General Knowledge',
+      questions: [
+        {
+          question: q.question,
+          options: q.options,
+          answer: q.correctAnswer
+        }
+      ]
+    }));
+
+    await Test.insertMany(formattedData);
+
+    res.send({ message: '✅ Test data inserted successfully!' });
+  } catch (error) {
+    console.error("❌ Seed error:", error);
+    res.status(500).send({ error: 'Failed to insert test data' });
+  }
+});
+
 // Start Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-
-// Example insertion code using MongoDB native driver
-db.tests.insertMany([
-  {
-    question: "What is the capital of France?",
-    options: ["Berlin", "Madrid", "Paris", "London"],
-    correctAnswer: "Paris"
-  },
-  {
-    question: "Which planet is known as the Red Planet?",
-    options: ["Earth", "Mars", "Jupiter", "Saturn"],
-    correctAnswer: "Mars"
-  }
-]);
-
