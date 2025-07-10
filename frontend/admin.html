@@ -28,8 +28,8 @@
 
 <button onclick="loadResponses()">🔍 View Responses</button>
 <button onclick="downloadResponses()">⬇️ Download Responses</button>
-<button onclick="loadFormhtml()"> 🚪Create Test</button>  
- 
+<button onclick="loadFormhtml()"> 🚪Create Test</button> 
+<button onclick="viewScores()">📊 View Scores</button>   
 <button onclick="logout()">🚪 Logout</button>
 
 <div id="responseTable">
@@ -128,7 +128,46 @@
     sessionStorage.clear();
     window.location.href = "index.html";
   }
-</script>
 
+  function viewScores() {
+    const testId = document.getElementById('testSelect').value;
+    if (!testId) return alert("Please select a test.");
+
+    const url = `${BASE_URL}/uploads/${testId}/responses.json`;
+
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (!Array.isArray(data)) return alert("No responses found.");
+
+        let html = `<h3>Scores for Test: ${testId}</h3>`;
+        html += `<table border="1" cellpadding="8"><tr>
+                  <th>Name</th>
+                  <th>Town</th>
+                  <th>Code</th>
+                  <th>Score</th>
+                  <th>Submitted At</th>
+                 </tr>`;
+
+        data.forEach(item => {
+          html += `<tr>
+                    <td>${item.name}</td>
+                    <td>${item.town}</td>
+                    <td>${item.code}</td>
+                    <td>${item.score || 0}</td>
+                    <td>${new Date(item.submittedAt).toLocaleString()}</td>
+                   </tr>`;
+        });
+
+        html += `</table>`;
+        const popup = window.open("", "Scores", "width=800,height=600");
+        popup.document.write(html);
+      })
+      .catch(err => {
+        console.error("Error loading scores", err);
+        alert("Failed to load scores.");
+      });
+  }
+</script>
 </body>
 </html>
