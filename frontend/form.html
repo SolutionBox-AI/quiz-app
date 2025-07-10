@@ -1,153 +1,89 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Create Quiz Test</title>
+  <title>Create Quiz</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-    }
-    input[type="text"] {
-      width: 300px;
-      margin: 5px 0;
-    }
-    label {
-      display: block;
-      margin-top: 10px;
-    }
-    .question-section {
-      margin-top: 30px;
-    }
-    #questionCount {
-      margin: 10px 0;
-      font-weight: bold;
-    }
-    button {
-      margin-right: 10px;
-      padding: 6px 12px;
-      cursor: pointer;
-    }
+    body { font-family: Arial; margin: 40px; }
+    input, textarea { display: block; margin: 10px 0; width: 400px; }
+    .option-group { margin-left: 20px; }
   </style>
 </head>
 <body>
-  <h2>📝 Create a New Test</h2>
+  <h2>Create a Test</h2>
 
-  <label>
-    Test Name:
-    <input type="text" id="testId" placeholder="e.g., history-class9" onchange="setTestId()" />
-  </label>
+  <label>Test Name: <input id="testName" /></label>
+  <label>Question: <textarea id="questionText" rows="3"></textarea></label>
 
-  <div class="question-section">
-    <label>Question:</label>
-    <input type="text" id="question" placeholder="Enter your question" />
-
-    <label>Option A:</label>
-    <input type="text" id="optA" />
-
-    <label>Option B:</label>
-    <input type="text" id="optB" />
-
-    <label>Option C:</label>
-    <input type="text" id="optC" />
-
-    <label>Option D:</label>
-    <input type="text" id="optD" />
-
-    <label>Select Correct Option:</label>
-    <label><input type="radio" name="correct" value="A" /> A</label>
-    <label><input type="radio" name="correct" value="B" /> B</label>
-    <label><input type="radio" name="correct" value="C" /> C</label>
-    <label><input type="radio" name="correct" value="D" /> D</label>
+  <div class="option-group">
+    <label>Option A: <input id="optA" /></label>
+    <label>Option B: <input id="optB" /></label>
+    <label>Option C: <input id="optC" /></label>
+    <label>Option D: <input id="optD" /></label>
   </div>
 
-  <div id="questionCount">0 question(s) added</div>
+  <label>Correct Answer (A/B/C/D): <input id="correct" maxlength="1" /></label>
 
-  <button onclick="addQuestion()">Add Question</button>
-  <button onclick="saveTest()">Save Test</button>
-  <button onclick="logout()">Logout</button>
+  <button onclick="addQuestion()">➕ Add Question</button>
+  <button onclick="saveTest()">💾 Save Test</button>
+  <button onclick="logout()">🚪 Logout</button>
+
+  <p>Total Questions Added: <span id="count">0</span></p>
 
   <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com"; // 🔁 Replace with your actual backend URL
-    let questions = [];
-    let currentTestId = "";
-
-    function setTestId() {
-      currentTestId = document.getElementById("testId").value.trim();
-      updateCount();
-    }
-
-    function updateCount() {
-      document.getElementById("questionCount").textContent = `${questions.length} question(s) added`;
-    }
+    const BASE_URL = "https://your-backend-url.onrender.com"; // Replace with actual backend URL
+    let questionList = [];
 
     function addQuestion() {
-      const question = document.getElementById("question").value.trim();
-      const optA = document.getElementById("optA").value.trim();
-      const optB = document.getElementById("optB").value.trim();
-      const optC = document.getElementById("optC").value.trim();
-      const optD = document.getElementById("optD").value.trim();
-      const correct = document.querySelector('input[name="correct"]:checked');
+      const question = document.getElementById('questionText').value.trim();
+      const testName = document.getElementById('testName').value.trim();
+      const correct = document.getElementById('correct').value.trim().toUpperCase();
 
-      if (!question || !optA || !optB || !optC || !optD || !correct) {
-        alert("❗ Please fill all fields and select the correct answer.");
-        return;
+      const options = [
+        { label: 'A', text: document.getElementById('optA').value.trim() },
+        { label: 'B', text: document.getElementById('optB').value.trim() },
+        { label: 'C', text: document.getElementById('optC').value.trim() },
+        { label: 'D', text: document.getElementById('optD').value.trim() }
+      ];
+
+      if (!testName || !question || !correct || !['A','B','C','D'].includes(correct)) {
+        return alert("Fill all fields correctly.");
       }
 
-      const newQ = {
-        question,
-        options: [
-          { label: "A", text: optA },
-          { label: "B", text: optB },
-          { label: "C", text: optC },
-          { label: "D", text: optD }
-        ],
-        answer: correct.value
-      };
+      questionList.push({ question, options, correct });
 
-      questions.push(newQ);
+      // Clear inputs
+      document.getElementById('questionText').value = '';
+      document.getElementById('optA').value = '';
+      document.getElementById('optB').value = '';
+      document.getElementById('optC').value = '';
+      document.getElementById('optD').value = '';
+      document.getElementById('correct').value = '';
 
-      // Clear input fields
-      document.getElementById("question").value = "";
-      document.getElementById("optA").value = "";
-      document.getElementById("optB").value = "";
-      document.getElementById("optC").value = "";
-      document.getElementById("optD").value = "";
-      document.querySelector('input[name="correct"]:checked').checked = false;
-
-      updateCount();
+      document.getElementById('count').innerText = questionList.length;
     }
 
     function saveTest() {
-      if (!currentTestId) {
-        alert("❗ Please enter the test name first.");
-        return;
+      const testName = document.getElementById('testName').value.trim();
+
+      if (!testName || questionList.length === 0) {
+        return alert("Please enter test name and add questions.");
       }
 
-      if (questions.length === 0) {
-        alert("❗ Please add at least one question.");
-        return;
-      }
-
-      fetch(`${BASE_URL}/api/quiz/test/${currentTestId}/save`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(questions)
+      fetch(`${BASE_URL}/api/quiz/test/${testName}/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(questionList)
       })
-        .then(res => {
-          if (!res.ok) {
-            return res.json().then(err => { throw new Error(err.error || "Unknown error") });
-          }
-          return res.json();
-        })
-        .then(data => {
-          alert("✅ " + data.message);
-          questions = [];
-          updateCount();
-        })
-        .catch(err => {
-          alert("❌ Test saving failed: " + err.message);
-        });
+      .then(res => res.json())
+      .then(data => {
+        alert("✅ " + data.message);
+        questionList = [];
+        document.getElementById('count').innerText = 0;
+      })
+      .catch(err => {
+        console.error("Save error", err);
+        alert("❌ Test saving failed.");
+      });
     }
 
     function logout() {
