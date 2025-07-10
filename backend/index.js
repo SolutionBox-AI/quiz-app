@@ -5,6 +5,10 @@ const mongoose = require('mongoose');
 
 const app = express();
 
+
+console.log("Connecting to MongoDB URI:", process.env.MONGODB_URI);
+
+
 // Middlewares
 app.use(cors());
 app.use(express.json());
