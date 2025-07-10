@@ -83,31 +83,28 @@
       ['question', 'optA', 'optB', 'optC', 'optD', 'correct'].forEach(id => document.getElementById(id).value = '');
     }
 
+// To save test
 function saveTest() {
-  const testId = document.getElementById("testName").value.trim();
-  if (!testId || questions.length === 0) {
-    alert("Please enter test name and add questions");
+  if (!currentTestId || questions.length === 0) {
+    alert("No test name or no questions.");
     return;
   }
 
-  fetch(`${BASE_URL}/api/quiz/test/${testId}/save`, {
+  fetch(`${BASE_URL}/api/quiz/test/${currentTestId}/save`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(questions)
   })
-  .then(res => res.json())
-  .then(data => {
-    alert("✅ " + data.message);
-    questions = []; // Clear after save
-    questionCount = 0;
-    document.getElementById("count").textContent = questionCount;
-    document.getElementById("testName").value = "";
-  })
-  .catch(err => {
-    console.error("❌ Error saving test", err);
-    alert("Failed to save test");
-  });
+    .then(res => res.json())
+    .then(data => {
+      alert(data.message || "Saved!");
+    })
+    .catch(err => {
+      console.error("Error saving test", err);
+      alert("Failed to save test");
+    });
 }
+
 
     function logout() {
       sessionStorage.clear();
