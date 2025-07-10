@@ -17,4 +17,9 @@
     "express-fileupload": "^1.5.2",
     "mammoth": "^1.9.1"
   }
+"dependencies": {
+  "cors": "^2.8.5",
+  "express": "^5.1.0",
+  "mongoose": "^7.6.1"
+}
 }
