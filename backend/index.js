@@ -18,7 +18,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 .then(() => console.log('✅ MongoDB connected'))
 .catch((err) => console.error('❌ MongoDB connection error:', err.message));
 
-// Define Schema and Model
+// Schema & Model
 const TestSchema = new mongoose.Schema({
   title: String,
   questions: [
@@ -45,8 +45,18 @@ app.get('/api/tests', async (req, res) => {
     const tests = await Test.find();
     res.json(tests);
   } catch (err) {
-    console.error('❌ Error fetching tests:', err.message);
     res.status(500).json({ error: 'Failed to load tests', details: err.message });
+  }
+});
+
+// Add new test
+app.post('/api/tests', async (req, res) => {
+  try {
+    const newTest = new Test(req.body);
+    await newTest.save();
+    res.status(201).json({ message: '✅ Test saved successfully', test: newTest });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save test', details: err.message });
   }
 });
 
@@ -72,48 +82,11 @@ app.get('/api/seed', async (req, res) => {
     await sampleTest.save();
     res.send('✅ Sample quiz added');
   } catch (err) {
-    console.error('❌ Error seeding data:', err.message);
     res.status(500).send('Failed to seed sample test');
   }
 });
 
-// Bulk seed route
-app.get('/api/seed-tests', async (req, res) => {
-  try {
-    const testData = [
-      {
-        question: "What is the capital of France?",
-        options: ["Berlin", "Madrid", "Paris", "London"],
-        correctAnswer: "Paris"
-      },
-      {
-        question: "Which planet is known as the Red Planet?",
-        options: ["Earth", "Mars", "Jupiter", "Saturn"],
-        correctAnswer: "Mars"
-      }
-    ];
-
-    const formattedData = testData.map(q => ({
-      title: 'General Knowledge',
-      questions: [
-        {
-          question: q.question,
-          options: q.options,
-          answer: q.correctAnswer
-        }
-      ]
-    }));
-
-    await Test.insertMany(formattedData);
-
-    res.send({ message: '✅ Test data inserted successfully!' });
-  } catch (error) {
-    console.error("❌ Seed error:", error);
-    res.status(500).send({ error: 'Failed to insert test data' });
-  }
-});
-
-// Start Server
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
