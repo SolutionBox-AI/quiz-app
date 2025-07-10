@@ -46,16 +46,19 @@ router.post('/test/:testId/save', (req, res) => {
     return res.status(400).send({ error: 'Invalid question data' });
   }
 
-  const testFolderPath = path.join(uploadsPath, testId);
+  const testFolderPath = path.join(__dirname, '../uploads', testId);
   const questionsPath = path.join(testFolderPath, 'questions.json');
 
-  // Ensure folder exists
   fs.mkdir(testFolderPath, { recursive: true }, (err) => {
-    if (err) return res.status(500).send({ error: 'Could not create folder' });
+    if (err) {
+      return res.status(500).send({ error: 'Could not create test folder' });
+    }
 
     fs.writeFile(questionsPath, JSON.stringify(questions, null, 2), (err) => {
-      if (err) return res.status(500).send({ error: 'Failed to save questions' });
-      res.send({ message: 'Test saved successfully' });
+      if (err) {
+        return res.status(500).send({ error: 'Failed to save questions' });
+      }
+      return res.send({ message: '✅ Test saved successfully' });
     });
   });
 });
