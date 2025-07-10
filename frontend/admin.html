@@ -1,173 +1,73 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Activity Page</title>
+  <title>Admin - View Responses</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 40px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #f2f2f2; }
-    #responseTable { display: none; }
+    body { font-family: Arial; margin: 40px; }
   </style>
 </head>
 <body>
-
-<script>
-  if (sessionStorage.getItem("role") !== "admin") {
-    alert("Access denied. Please login as admin.");
-    window.location.href = "index.html";
-  }
-</script>
-
-<h2>📋 Admin Dashboard - View & Download Responses</h2>
-
-<label for="testSelect">Select Test:</label>
-<select id="testSelect">
-  <option id="onLoad">--Loading tests--</option>
-</select>
-
-<button onclick="loadResponses()">🔍 View Responses</button>
-<button onclick="downloadResponses()">⬇️ Download Responses</button>
-<button onclick="loadFormhtml()"> 🚪Create Test</button> 
-<button onclick="viewScores()">📊 View Scores</button>   
-<button onclick="logout()">🚪 Logout</button>
-
-<div id="responseTable">
-  <h3>📊 Student Responses</h3>
-  <table id="table">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Town</th>
-        <th>Code</th>
-        <th>Answers</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
-</div>
-
-<script>
-  const BASE_URL = 'https://quiz-app-4087.onrender.com'; // 🔁 Replace with your backend URL
-
-  //LOADING FORM HTML FOR TEST CREATION
-  function loadFormhtml()
-    { 
-      console.log("Form Loading");
-      window.location.href = "form.html";
+  <script>
+    if (sessionStorage.getItem("role") !== "admin") {
+      alert("Access denied. Login as admin.");
+      window.location.href = "index.html";
     }
-  // Load available test folders
-  window.onload = () => {
-    console.log("Loading test list...");
-    fetch(`${BASE_URL}/api/quiz/tests`)
-      .then(res => res.json())
-      .then(tests => {
-        const select = document.getElementById('testSelect');
-        select.innerHTML = '<option value="">--Select Test--</option>';
-        tests.forEach(test => {
-          const opt = document.createElement('option');
-          opt.value = test;
-          opt.textContent = test;
-          select.appendChild(opt);
-        });
-      })
-      .catch(err => {
-        alert("Failed to load test list.");
-        console.error(err);
-      });
-  };
+  </script>
 
-  function loadResponses() {
-    const testId = document.getElementById('testSelect').value;
-    if (!testId) return alert("Please select a test.");
+  <h2>📊 Admin Panel - View & Download Responses</h2>
 
-    fetch(`${BASE_URL}/uploads/${testId}/responses.json`)
-      .then(res => {
-        if (!res.ok) throw new Error("File not found or corrupt.");
-        return res.json();
-      })
-      .then(data => {
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = ''; // Clear old rows
+  <label>Select Test:</label>
+  <select id="testSelect"><option>Loading...</option></select>
+  <br><br>
 
-        if (data.length === 0) {
-          alert("No responses found for this test.");
-          document.getElementById('responseTable').style.display = 'none';
-          return;
-        }
+  <button onclick="viewResponses()">👁 View Responses</button>
+  <button onclick="downloadResponses()">📥 Download Responses</button>
+  <button onclick="logout()">🚪 Logout</button>
 
-        data.forEach(entry => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${entry.name}</td>
-            <td>${entry.town}</td>
-            <td>${entry.code}</td>
-            <td>${(entry.answers || []).join(', ')}</td>
-          `;
-          tbody.appendChild(row);
-        });
+  <pre id="responseOutput" style="background:#f0f0f0; padding:20px;"></pre>
 
-        document.getElementById('responseTable').style.display = 'block';
-      })
-      .catch(err => {
-        console.error(err);
-        alert("Error loading responses.");
-        document.getElementById('responseTable').style.display = 'none';
-      });
-  }
+  <script>
+    const BASE_URL = "https://your-backend-url.onrender.com"; // Replace this
 
-  function downloadResponses() {
-    const testId = document.getElementById('testSelect').value;
-    if (!testId) return alert("Please select a test.");
+    window.onload = () => {
+      fetch(`${BASE_URL}/api/quiz/tests`)
+        .then(res => res.json())
+        .then(tests => {
+          const sel = document.getElementById('testSelect');
+          sel.innerHTML = '<option value="">--Select Test--</option>';
+          tests.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = t;
+            sel.appendChild(opt);
+          });
+        })
+        .catch(err => alert("Failed to load test list."));
+    };
 
-    const url = `${BASE_URL}/uploads/${testId}/responses.json`;
-    window.open(url, '_blank');
-  }
+    function viewResponses() {
+      const testId = document.getElementById('testSelect').value;
+      if (!testId) return alert("Select a test.");
 
-  function logout() {
-    sessionStorage.clear();
-    window.location.href = "index.html";
-  }
+      fetch(`${BASE_URL}/uploads/${testId}/responses.json`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('responseOutput').textContent = JSON.stringify(data, null, 2);
+        })
+        .catch(() => alert("Failed to load responses."));
+    }
 
-  function viewScores() {
-    const testId = document.getElementById('testSelect').value;
-    if (!testId) return alert("Please select a test.");
+    function downloadResponses() {
+      const testId = document.getElementById('testSelect').value;
+      if (!testId) return alert("Select a test.");
 
-    const url = `${BASE_URL}/uploads/${testId}/responses.json`;
+      window.open(`${BASE_URL}/uploads/${testId}/responses.json`, '_blank');
+    }
 
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        if (!Array.isArray(data)) return alert("No responses found.");
-
-        let html = `<h3>Scores for Test: ${testId}</h3>`;
-        html += `<table border="1" cellpadding="8"><tr>
-                  <th>Name</th>
-                  <th>Town</th>
-                  <th>Code</th>
-                  <th>Score</th>
-                  <th>Submitted At</th>
-                 </tr>`;
-
-        data.forEach(item => {
-          html += `<tr>
-                    <td>${item.name}</td>
-                    <td>${item.town}</td>
-                    <td>${item.code}</td>
-                    <td>${item.score || 0}</td>
-                    <td>${new Date(item.submittedAt).toLocaleString()}</td>
-                   </tr>`;
-        });
-
-        html += `</table>`;
-        const popup = window.open("", "Scores", "width=800,height=600");
-        popup.document.write(html);
-      })
-      .catch(err => {
-        console.error("Error loading scores", err);
-        alert("Failed to load scores.");
-      });
-  }
-</script>
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = "index.html";
+    }
+  </script>
 </body>
 </html>
