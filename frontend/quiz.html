@@ -20,11 +20,15 @@
     <label>Town: <input id="town" /></label><br>
     <label>Code: <input id="code" /></label><br>
 
-    <label>Select Test: 
+<label>Select Test:</label>
+  <select id="testSelect"><option>Loading...</option></select>
+
+    
+    <label>Select Test:</label> 
       <select id="testSelect" onchange="onTestChange(this)">
         <option value="">Loading...</option>
       </select>
-    </label><br><br>
+    
 
     <button onclick="startQuiz()">Start Quiz</button>
     <button onclick="logout()">Logout</button>
