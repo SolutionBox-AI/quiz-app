@@ -25,6 +25,11 @@ const TestSchema = new mongoose.Schema({
 const Test = mongoose.model('Test', TestSchema);
 
 // Sample Route
+
+app.get('/', (req, res) => {
+  res.send('Quiz API is running!');
+});
+
 app.get('/api/tests', async (req, res) => {
   try {
     const tests = await Test.find();
