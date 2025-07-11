@@ -50,20 +50,23 @@ router.post('/test/:testId/save', async (req, res) => {
 
 // ✅ POST - Submit student response
 router.post('/test/:testId/submit', async (req, res) => {
+  const { testId } = req.params;
   const { name, answers } = req.body;
-  const testId = req.params.testId;
 
   if (!name || !Array.isArray(answers)) {
-    return res.status(400).json({ error: 'Invalid submission' });
+    return res.status(400).json({ error: 'Invalid data' });
   }
 
   try {
-    await Response.create({ name, answers, testId, submittedAt: new Date() });
-    res.json({ message: 'Response saved successfully' });
+    const saved = await ResponseModel.create({ testId, name, answers });
+    res.status(200).json({ message: 'Response saved', data: saved });
   } catch (err) {
+    console.error('Save error:', err);
     res.status(500).json({ error: 'Failed to save response' });
   }
 });
+
+module.exports = router;
 
 // ✅ GET responses for a test
 router.get('/test/:testId/responses', async (req, res) => {
@@ -76,3 +79,23 @@ router.get('/test/:testId/responses', async (req, res) => {
 });
 
 module.exports = router;
+
+router.post('/test/:testId/submit', async (req, res) => {
+  const { testId } = req.params;
+  const { name, answers } = req.body;
+
+  if (!name || !Array.isArray(answers)) {
+    return res.status(400).json({ error: 'Invalid data' });
+  }
+
+  try {
+    const saved = await ResponseModel.create({ testId, name, answers });
+    res.status(200).json({ message: 'Response saved', data: saved });
+  } catch (err) {
+    console.error('Save error:', err);
+    res.status(500).json({ error: 'Failed to save response' });
+  }
+});
+
+module.exports = router;
+
