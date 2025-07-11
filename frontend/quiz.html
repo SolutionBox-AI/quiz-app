@@ -1,54 +1,117 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Student Quiz</title>
-  <style>
-    body { font-family: Arial; margin: 40px; }
-    .question-box { display: none; }
-    .active { display: block; }
-  </style>
-
-  <!-- ✅ Correct way to load script with defer -->
-  <script src="script.js" defer></script>
+  <meta charset="UTF-8">
+  <title>Take Quiz</title>
 </head>
-
 <body>
-  <h2>Student Quiz</h2>
+  <h1>Start Your Quiz</h1>
 
-  <div id="intro">
-    <label>Name: <input id="name" /></label><br>
-    <label>Town: <input id="town" /></label><br>
-    <label>Code: <input id="code" /></label><br>
-    
-    <label>Select Test:</label> 
-      <select id="testSelect">
-        <option value="">Loading...</option>
-      </select>
-    
+  <label for="name">Your Name:</label>
+  <input type="text" id="name" placeholder="Enter your name" /><br><br>
 
-    <button onclick="startQuiz()">Start Quiz</button>
-    <button onclick="logout()">Logout</button>
-    <script>
-      function logout() {
-        sessionStorage.clear();
-        window.location.href = "index.html";
+  <label for="testSelect">Choose Test:</label>
+  <select id="testSelect">
+    <option value="">--Select Test--</option>
+  </select><br><br>
+
+  <div id="quizContainer" style="display: none;"></div>
+
+  <button id="submitBtn" onclick="submitQuiz()" style="display: none;">Submit Quiz</button>
+
+  <script>
+    const BASE_URL = "https://quiz-app-4087.onrender.com/api/quiz";
+
+    async function loadTestList() {
+      try {
+        const res = await fetch(`${BASE_URL}/tests`);
+        const tests = await res.json();
+
+        const select = document.getElementById("testSelect");
+        tests.forEach(test => {
+          const option = document.createElement("option");
+          option.value = test;
+          option.textContent = test;
+          select.appendChild(option);
+        });
+      } catch (err) {
+        alert("Failed to load test list.");
+        console.error(err);
+      }
+    }
+
+    async function loadQuestions(testId) {
+      try {
+        const res = await fetch(`${BASE_URL}/test/${testId}/questions`);
+        const questions = await res.json();
+
+        const container = document.getElementById("quizContainer");
+        container.innerHTML = ""; // Clear old questions
+        questions.forEach((q, index) => {
+          const div = document.createElement("div");
+          div.innerHTML = `
+            <h3>Q${index + 1}: ${q.question}</h3>
+            <label><input type="radio" name="q${index}" value="A"> A. ${q.options.A}</label><br>
+            <label><input type="radio" name="q${index}" value="B"> B. ${q.options.B}</label><br>
+            <label><input type="radio" name="q${index}" value="C"> C. ${q.options.C}</label><br>
+            <label><input type="radio" name="q${index}" value="D"> D. ${q.options.D}</label><br><br>
+          `;
+          container.appendChild(div);
+        });
+
+        container.dataset.questions = JSON.stringify(questions);
+        container.style.display = "block";
+        document.getElementById("submitBtn").style.display = "block";
+      } catch (err) {
+        alert("Failed to load questions.");
+        console.error(err);
+      }
+    }
+
+    async function submitQuiz() {
+      const name = document.getElementById("name").value.trim();
+      const testId = document.getElementById("testSelect").value;
+      const questions = JSON.parse(document.getElementById("quizContainer").dataset.questions);
+
+      if (!name || !testId || questions.length === 0) {
+        alert("Please enter name, select test, and answer questions.");
+        return;
       }
 
+      const answers = questions.map((q, index) => {
+        const selected = document.querySelector(`input[name="q${index}"]:checked`);
+        return {
+          question: q.question,
+          selected: selected ? selected.value : null
+        };
+      });
 
-    </script>
-  </div>
+      try {
+        const res = await fetch(`${BASE_URL}/test/${testId}/submit`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, answers })
+        });
 
-  <div id="quiz" style="display:none;">
-    <div id="questionContainer"></div>
-    <button onclick="prev()">Previous</button>
-    <button onclick="next()">Next</button>
-    <button onclick="submitQuiz()" id="submitBtn" style="display:none;">Submit</button>
-    <button onclick="goToStart()">Go To Start</button>
-  </div>
+        const result = await res.json();
+        if (res.ok) {
+          alert("✅ Quiz submitted successfully!");
+        } else {
+          alert("❌ Submission failed: " + result.error);
+        }
+      } catch (err) {
+        alert("⚠️ Server error while submitting.");
+        console.error(err);
+      }
+    }
 
-  <div id="thankyou" style="display:none;">
-    <h3>Thank you for submitting!</h3>
-    <button onclick="goToStart()">Give Another Test</button>
-  </div>
+    // Load tests on page load
+    document.getElementById("testSelect").addEventListener("change", e => {
+      const testId = e.target.value;
+      if (testId) loadQuestions(testId);
+    });
+
+    loadTestList();
+  </script>
 </body>
 </html>
