@@ -1,87 +1,113 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Create Quiz</title>
+  <title>Create Test</title>
   <style>
-    body { font-family: Arial; margin: 40px; }
-    input, textarea { display: block; margin: 10px 0; width: 400px; }
-    .option-group { margin-left: 20px; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    label { display: block; margin-top: 10px; }
+    input[type="text"], textarea { width: 100%; padding: 8px; margin-top: 4px; }
+    .option-group { margin-top: 5px; }
+    button { margin-top: 15px; padding: 10px 20px; }
   </style>
 </head>
 <body>
-  <h2>Create a Test</h2>
+  <script>
+    if (sessionStorage.getItem("role") !== "admin") {
+      alert("Access denied. Please login as admin.");
+      window.location.href = "index.html";
+    }
+  </script>
 
-  <label>Test Name: <input id="testName" /></label>
-  <label>Question: <textarea id="questionText" rows="3"></textarea></label>
+  <h2>📝 Create a New Test</h2>
+
+  <label>Test Name:</label>
+  <input type="text" id="testName" placeholder="Enter test name once" required />
+
+  <label>Question:</label>
+  <textarea id="questionText" placeholder="Enter your question"></textarea>
 
   <div class="option-group">
-    <label>Option A: <input id="optA" /></label>
-    <label>Option B: <input id="optB" /></label>
-    <label>Option C: <input id="optC" /></label>
-    <label>Option D: <input id="optD" /></label>
+    <label>Option A:</label>
+    <input type="text" id="optA">
+    <label>Option B:</label>
+    <input type="text" id="optB">
+    <label>Option C:</label>
+    <input type="text" id="optC">
+    <label>Option D:</label>
+    <input type="text" id="optD">
   </div>
 
-  <label>Correct Answer (A/B/C/D): <input id="correct" maxlength="1" /></label>
+  <label>Correct Answer (A/B/C/D):</label>
+  <input type="text" id="correctAns" maxlength="1">
 
-  <button onclick="addQuestion()">➕ Add Question</button>
-  <button onclick="saveTest()">💾 Save Test</button>
-  <button onclick="logout()">🚪 Logout</button>
+  <p>✅ Total Questions Added: <span id="qCount">0</span></p>
 
-  <p>Total Questions Added: <span id="count">0</span></p>
+  <button onclick="addQuestion()">Add Question</button>
+  <button onclick="saveTest()">Save Test</button>
+  <button onclick="logout()">Logout</button>
 
   <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com"; // Replace with actual backend URL
+    const BASE_URL = "https://quiz-app-4087.onrender.com/api/quiz";
     let questionList = [];
 
     function addQuestion() {
-      const question = document.getElementById('questionText').value.trim();
-      const testName = document.getElementById('testName').value.trim();
-      const correct = document.getElementById('correct').value.trim().toUpperCase();
+      const question = document.getElementById("questionText").value.trim();
+      const A = document.getElementById("optA").value.trim();
+      const B = document.getElementById("optB").value.trim();
+      const C = document.getElementById("optC").value.trim();
+      const D = document.getElementById("optD").value.trim();
+      const correct = document.getElementById("correctAns").value.trim().toUpperCase();
 
-      const options = [
-        { label: 'A', text: document.getElementById('optA').value.trim() },
-        { label: 'B', text: document.getElementById('optB').value.trim() },
-        { label: 'C', text: document.getElementById('optC').value.trim() },
-        { label: 'D', text: document.getElementById('optD').value.trim() }
-      ];
-
-      if (!testName || !question || !correct || !['A','B','C','D'].includes(correct)) {
-        return alert("Fill all fields correctly.");
+      if (!question || !A || !B || !C || !D || !["A", "B", "C", "D"].includes(correct)) {
+        alert("Please fill all fields correctly.");
+        return;
       }
 
-      questionList.push({ question, options, correct });
+      const newQ = {
+        question,
+        options: [
+          { label: "A", text: A },
+          { label: "B", text: B },
+          { label: "C", text: C },
+          { label: "D", text: D },
+        ],
+        correctAnswer: correct
+      };
+
+      questionList.push(newQ);
+      document.getElementById("qCount").innerText = questionList.length;
 
       // Clear inputs
-      document.getElementById('questionText').value = '';
-      document.getElementById('optA').value = '';
-      document.getElementById('optB').value = '';
-      document.getElementById('optC').value = '';
-      document.getElementById('optD').value = '';
-      document.getElementById('correct').value = '';
-
-      document.getElementById('count').innerText = questionList.length;
+      document.getElementById("questionText").value = "";
+      document.getElementById("optA").value = "";
+      document.getElementById("optB").value = "";
+      document.getElementById("optC").value = "";
+      document.getElementById("optD").value = "";
+      document.getElementById("correctAns").value = "";
     }
 
     function saveTest() {
-      const testName = document.getElementById('testName').value.trim();
+      const testName = document.getElementById("testName").value.trim();
+      if (!testName) return alert("Please enter the test name.");
+      if (questionList.length === 0) return alert("Please add at least one question.");
 
-      if (!testName || questionList.length === 0) {
-        return alert("Please enter test name and add questions.");
-      }
-
-      fetch(`${BASE_URL}/api/quiz/test/${testName}/save`, {
+      fetch(`${BASE_URL}/test/${testName}/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(questionList)
       })
       .then(res => res.json())
       .then(data => {
-        alert("✅ " + data.message);
-        questionList = [];
-        document.getElementById('count').innerText = 0;
+        if (data.message) {
+          alert("✅ Test saved successfully!");
+          questionList = [];
+          document.getElementById("qCount").innerText = "0";
+        } else {
+          throw new Error("Save failed");
+        }
       })
       .catch(err => {
-        console.error("Save error", err);
+        console.error(err);
         alert("❌ Test saving failed.");
       });
     }
