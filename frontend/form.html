@@ -2,94 +2,92 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Create Quiz</title>
-  <style>
-    body { font-family: Arial; padding: 20px; }
-    .question { border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; }
-  </style>
+  <title>Create Test</title>
 </head>
 <body>
-  <h2>Create Test</h2>
+  <h1>Create New Test</h1>
 
-  <label>Test Name:
-    <input type="text" id="testId" required>
-  </label>
+  <label for="testId">Enter Test Name:</label>
+  <input type="text" id="testId" placeholder="e.g., history-class9" />
   <br><br>
 
-  <div id="questions"></div>
-  <button onclick="addQuestion()">➕ Add Question</button>
-  <p><strong>Total Questions:</strong> <span id="count">0</span></p>
+  <div id="questionsContainer">
+    <!-- Questions will be added here -->
+  </div>
 
-  <br>
+  <button onclick="addQuestion()">➕ Add Question</button>
+  <br><br>
   <button onclick="saveTest()">💾 Save Test</button>
-  <button onclick="logout()">🚪 Logout</button>
 
   <script>
     let questionCount = 0;
 
     function addQuestion() {
-      const container = document.getElementById('questions');
-      const div = document.createElement('div');
-      div.className = 'question';
+      questionCount++;
+      const container = document.getElementById("questionsContainer");
+
+      const div = document.createElement("div");
       div.innerHTML = `
-        <label>Question: <input type="text" class="question-text" required></label><br>
-        <label>A: <input type="text" class="option-A" required></label><br>
-        <label>B: <input type="text" class="option-B" required></label><br>
-        <label>C: <input type="text" class="option-C" required></label><br>
-        <label>D: <input type="text" class="option-D" required></label><br>
-        <label>Correct Answer (A/B/C/D): <input type="text" class="correct" required></label>
+        <h3>Question ${questionCount}</h3>
+        <textarea placeholder="Question text" class="questionText" rows="2" cols="60"></textarea><br>
+        A: <input type="text" class="optionA"><br>
+        B: <input type="text" class="optionB"><br>
+        C: <input type="text" class="optionC"><br>
+        D: <input type="text" class="optionD"><br>
+        Correct Answer (A/B/C/D): <input type="text" class="correctAnswer"><br><br>
+        <hr>
       `;
       container.appendChild(div);
-      document.getElementById('count').textContent = ++questionCount;
     }
 
     async function saveTest() {
-      const testId = document.getElementById('testId').value.trim();
+      const testId = document.getElementById("testId").value.trim();
       if (!testId) {
-        alert("Please enter Test Name.");
+        alert("Please enter a Test Name.");
         return;
       }
 
-      const questionBlocks = document.querySelectorAll('.question');
       const questions = [];
+      const texts = document.querySelectorAll(".questionText");
+      const as = document.querySelectorAll(".optionA");
+      const bs = document.querySelectorAll(".optionB");
+      const cs = document.querySelectorAll(".optionC");
+      const ds = document.querySelectorAll(".optionD");
+      const corrects = document.querySelectorAll(".correctAnswer");
 
-      questionBlocks.forEach(block => {
-        const question = block.querySelector('.question-text').value;
-        const options = [
-          { label: 'A', text: block.querySelector('.option-A').value },
-          { label: 'B', text: block.querySelector('.option-B').value },
-          { label: 'C', text: block.querySelector('.option-C').value },
-          { label: 'D', text: block.querySelector('.option-D').value }
-        ];
-        const correctAnswer = block.querySelector('.correct').value.toUpperCase();
-
-        questions.push({ question, options, correctAnswer });
-      });
+      for (let i = 0; i < texts.length; i++) {
+        questions.push({
+          question: texts[i].value.trim(),
+          options: {
+            A: as[i].value.trim(),
+            B: bs[i].value.trim(),
+            C: cs[i].value.trim(),
+            D: ds[i].value.trim()
+          },
+          correctAnswer: corrects[i].value.trim().toUpperCase()
+        });
+      }
 
       try {
         const res = await fetch(`https://quiz-app-4087.onrender.com/api/quiz/test/${testId}/save`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(questions)
         });
 
         const data = await res.json();
+        console.log(data);
+
         if (res.ok) {
           alert("✅ Test saved successfully!");
         } else {
           alert("❌ Test saving failed: " + data.error);
         }
       } catch (err) {
-        alert("❌ Error: " + err.message);
+        console.error(err);
+        alert("⚠️ Failed to connect to server.");
       }
     }
-
-    function logout() {
-      window.location.href = 'index.html';
-    }
-
-    // Add the first question block on page load
-    window.onload = () => addQuestion();
   </script>
 </body>
 </html>
