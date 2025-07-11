@@ -1,121 +1,95 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Create Test</title>
+  <meta charset="UTF-8">
+  <title>Create Quiz</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    label { display: block; margin-top: 10px; }
-    input[type="text"], textarea { width: 100%; padding: 8px; margin-top: 4px; }
-    .option-group { margin-top: 5px; }
-    button { margin-top: 15px; padding: 10px 20px; }
+    body { font-family: Arial; padding: 20px; }
+    .question { border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; }
   </style>
 </head>
 <body>
-  <script>
-    if (sessionStorage.getItem("role") !== "admin") {
-      alert("Access denied. Please login as admin.");
-      window.location.href = "index.html";
-    }
-  </script>
+  <h2>Create Test</h2>
 
-  <h2>📝 Create a New Test</h2>
+  <label>Test Name:
+    <input type="text" id="testId" required>
+  </label>
+  <br><br>
 
-  <label>Test Name:</label>
-  <input type="text" id="testName" placeholder="Enter test name once" required />
+  <div id="questions"></div>
+  <button onclick="addQuestion()">➕ Add Question</button>
+  <p><strong>Total Questions:</strong> <span id="count">0</span></p>
 
-  <label>Question:</label>
-  <textarea id="questionText" placeholder="Enter your question"></textarea>
-
-  <div class="option-group">
-    <label>Option A:</label>
-    <input type="text" id="optA">
-    <label>Option B:</label>
-    <input type="text" id="optB">
-    <label>Option C:</label>
-    <input type="text" id="optC">
-    <label>Option D:</label>
-    <input type="text" id="optD">
-  </div>
-
-  <label>Correct Answer (A/B/C/D):</label>
-  <input type="text" id="correctAns" maxlength="1">
-
-  <p>✅ Total Questions Added: <span id="qCount">0</span></p>
-
-  <button onclick="addQuestion()">Add Question</button>
-  <button onclick="saveTest()">Save Test</button>
-  <button onclick="logout()">Logout</button>
+  <br>
+  <button onclick="saveTest()">💾 Save Test</button>
+  <button onclick="logout()">🚪 Logout</button>
 
   <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com/api/quiz";
-    let questionList = [];
+    let questionCount = 0;
 
     function addQuestion() {
-      const question = document.getElementById("questionText").value.trim();
-      const A = document.getElementById("optA").value.trim();
-      const B = document.getElementById("optB").value.trim();
-      const C = document.getElementById("optC").value.trim();
-      const D = document.getElementById("optD").value.trim();
-      const correct = document.getElementById("correctAns").value.trim().toUpperCase();
+      const container = document.getElementById('questions');
+      const div = document.createElement('div');
+      div.className = 'question';
+      div.innerHTML = `
+        <label>Question: <input type="text" class="question-text" required></label><br>
+        <label>A: <input type="text" class="option-A" required></label><br>
+        <label>B: <input type="text" class="option-B" required></label><br>
+        <label>C: <input type="text" class="option-C" required></label><br>
+        <label>D: <input type="text" class="option-D" required></label><br>
+        <label>Correct Answer (A/B/C/D): <input type="text" class="correct" required></label>
+      `;
+      container.appendChild(div);
+      document.getElementById('count').textContent = ++questionCount;
+    }
 
-      if (!question || !A || !B || !C || !D || !["A", "B", "C", "D"].includes(correct)) {
-        alert("Please fill all fields correctly.");
+    async function saveTest() {
+      const testId = document.getElementById('testId').value.trim();
+      if (!testId) {
+        alert("Please enter Test Name.");
         return;
       }
 
-      const newQ = {
-        question,
-        options: [
-          { label: "A", text: A },
-          { label: "B", text: B },
-          { label: "C", text: C },
-          { label: "D", text: D },
-        ],
-        correctAnswer: correct
-      };
+      const questionBlocks = document.querySelectorAll('.question');
+      const questions = [];
 
-      questionList.push(newQ);
-      document.getElementById("qCount").innerText = questionList.length;
+      questionBlocks.forEach(block => {
+        const question = block.querySelector('.question-text').value;
+        const options = [
+          { label: 'A', text: block.querySelector('.option-A').value },
+          { label: 'B', text: block.querySelector('.option-B').value },
+          { label: 'C', text: block.querySelector('.option-C').value },
+          { label: 'D', text: block.querySelector('.option-D').value }
+        ];
+        const correctAnswer = block.querySelector('.correct').value.toUpperCase();
 
-      // Clear inputs
-      document.getElementById("questionText").value = "";
-      document.getElementById("optA").value = "";
-      document.getElementById("optB").value = "";
-      document.getElementById("optC").value = "";
-      document.getElementById("optD").value = "";
-      document.getElementById("correctAns").value = "";
-    }
-
-    function saveTest() {
-      const testName = document.getElementById("testName").value.trim();
-      if (!testName) return alert("Please enter the test name.");
-      if (questionList.length === 0) return alert("Please add at least one question.");
-
-      fetch(`${BASE_URL}/test/${testName}/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(questionList)
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.message) {
-          alert("✅ Test saved successfully!");
-          questionList = [];
-          document.getElementById("qCount").innerText = "0";
-        } else {
-          throw new Error("Save failed");
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        alert("❌ Test saving failed.");
+        questions.push({ question, options, correctAnswer });
       });
+
+      try {
+        const res = await fetch(`https://quiz-app-4087.onrender.com/api/quiz/test/${testId}/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(questions)
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert("✅ Test saved successfully!");
+        } else {
+          alert("❌ Test saving failed: " + data.error);
+        }
+      } catch (err) {
+        alert("❌ Error: " + err.message);
+      }
     }
 
     function logout() {
-      sessionStorage.clear();
-      window.location.href = "index.html";
+      window.location.href = 'index.html';
     }
+
+    // Add the first question block on page load
+    window.onload = () => addQuestion();
   </script>
 </body>
 </html>
