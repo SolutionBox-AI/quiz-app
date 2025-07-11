@@ -3,6 +3,9 @@ const mongoose = require('mongoose');
 const quizRoutes = require('./routes/quizRoutes');
 require('dotenv').config();
 
+const cors = require('cors');
+app.use(cors());
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
