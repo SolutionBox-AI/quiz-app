@@ -48,6 +48,11 @@ router.post("/test/:testId/save", async (req, res) => {
 router.post("/test/:testId/submit", async (req, res) => {
   const { testId } = req.params;
   const { name, userCode, answers } = req.body;
+  const existing = await Response.findOne({ testId, userCode });
+
+if (existing) {
+  return res.status(400).json({ error: "You have already submitted this test." });
+}
 
   if (!name || !userCode || !Array.isArray(answers)) {
     return res.status(400).json({ error: 'Invalid data' });
