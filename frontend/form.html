@@ -19,75 +19,80 @@
   <br><br>
   <button onclick="saveTest()">💾 Save Test</button>
 
-  <script>
-    let questionCount = 0;
+ <script>
+  let questionCount = 0;
 
-    function addQuestion() {
-      questionCount++;
-      const container = document.getElementById("questionsContainer");
+  function addQuestion() {
+    questionCount++;
+    const container = document.getElementById("questionsContainer");
 
-      const div = document.createElement("div");
-      div.innerHTML = `
-        <h3>Question ${questionCount}</h3>
-        <textarea placeholder="Question text" class="questionText" rows="2" cols="60"></textarea><br>
-        A: <input type="text" class="optionA"><br>
-        B: <input type="text" class="optionB"><br>
-        C: <input type="text" class="optionC"><br>
-        D: <input type="text" class="optionD"><br>
-        Correct Answer (A/B/C/D): <input type="text" class="correctAnswer"><br><br>
-        <hr>
-      `;
-      container.appendChild(div);
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <h3>Question ${questionCount}</h3>
+      <textarea placeholder="Question text" class="questionText" rows="2" cols="60"></textarea><br>
+      A: <input type="text" class="optionA"><br>
+      B: <input type="text" class="optionB"><br>
+      C: <input type="text" class="optionC"><br>
+      D: <input type="text" class="optionD"><br>
+      Correct Answer (A/B/C/D): <input type="text" class="correctAnswer"><br><br>
+      <hr>
+    `;
+    container.appendChild(div);
+  }
+
+  async function saveTest() {
+    const testId = document.getElementById("testId").value.trim();
+    if (!testId) {
+      alert("Please enter a Test Name.");
+      return;
     }
 
-    async function saveTest() {
-      const testId = document.getElementById("testId").value.trim();
-      if (!testId) {
-        alert("Please enter a Test Name.");
+    const questions = [];
+    const texts = document.querySelectorAll(".questionText");
+    const as = document.querySelectorAll(".optionA");
+    const bs = document.querySelectorAll(".optionB");
+    const cs = document.querySelectorAll(".optionC");
+    const ds = document.querySelectorAll(".optionD");
+    const corrects = document.querySelectorAll(".correctAnswer");
+
+    for (let i = 0; i < texts.length; i++) {
+      const opts = [as[i].value.trim(), bs[i].value.trim(), cs[i].value.trim(), ds[i].value.trim()];
+      const correct = corrects[i].value.trim().toUpperCase();
+      const correctIndex = { A: 0, B: 1, C: 2, D: 3 }[correct];
+
+      if (correctIndex === undefined) {
+        alert(`❌ Question ${i + 1} has invalid correct answer. Use A/B/C/D.`);
         return;
       }
 
-      const questions = [];
-      const texts = document.querySelectorAll(".questionText");
-      const as = document.querySelectorAll(".optionA");
-      const bs = document.querySelectorAll(".optionB");
-      const cs = document.querySelectorAll(".optionC");
-      const ds = document.querySelectorAll(".optionD");
-      const corrects = document.querySelectorAll(".correctAnswer");
-
-      for (let i = 0; i < texts.length; i++) {
-        questions.push({
-          question: texts[i].value.trim(),
-          options: {
-            A: as[i].value.trim(),
-            B: bs[i].value.trim(),
-            C: cs[i].value.trim(),
-            D: ds[i].value.trim()
-          },
-          correctAnswer: corrects[i].value.trim().toUpperCase()
-        });
-      }
-
-      try {
-        const res = await fetch(`https://quiz-app-4087.onrender.com/api/quiz/test/${testId}/save`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(questions)
-        });
-
-        const data = await res.json();
-        console.log(data);
-
-        if (res.ok) {
-          alert("✅ Test saved successfully!");
-        } else {
-          alert("❌ Test saving failed: " + data.error);
-        }
-      } catch (err) {
-        console.error(err);
-        alert("⚠️ Failed to connect to server.");
-      }
+      questions.push({
+        question: texts[i].value.trim(),
+        options: opts,
+        correctAnswer: opts[correctIndex]
+      });
     }
-  </script>
+
+    try {
+      const res = await fetch(`https://quiz-app-4087.onrender.com/test/${testId}/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(questions)
+      });
+
+      const data = await res.json();
+      console.log(data);
+
+      if (res.ok) {
+        alert("✅ Test saved successfully!");
+      } else {
+        alert("❌ Test saving failed: " + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("⚠️ Failed to connect to server.");
+    }
+  }
+</script>
+
 </body>
 </html>
