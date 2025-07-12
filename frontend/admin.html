@@ -59,7 +59,7 @@ t <!DOCTYPE html>
   
   <button onclick="window.location.href='view-tests.html'">🔍 View & Edit Tests</button>
   <button onclick="viewResponses()">👁 View Responses</button>
-  <button onclick="downloadResponses()">📥 Download JSON</button>
+  <button onclick="downloadCSV()">📥 Download Responses</button>
   <button onclick="window.location.href='form.html'">📝 Create New Test</button>
   <button onclick="window.location.href='scores.html'">📈 View Scores</button>
   <button onclick="logout()">🚪 Logout</button>
@@ -108,7 +108,29 @@ t <!DOCTYPE html>
       alert("❌ Failed to load responses.");
     });
 }
+///////////////////////////////////////DOWNLOAD RESPONSE CSV////////////////////////////
+    function downloadCSV() {
+  const data = JSON.parse(sessionStorage.getItem("latestResponses") || "[]");
+  if (!data.length) return alert("No responses available.");
 
+  let csv = "Name,User Code,Question,Selected Answer,Submitted At\n";
+  data.forEach(entry => {
+    entry.answers.forEach(ans => {
+      csv += `"${entry.name}","${entry.userCode || ''}","${ans.question}","${ans.selected}","${new Date(entry.submittedAt).toLocaleString()}"\n`;
+    });
+  });
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `quiz-responses.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
     function downloadResponses() {
       const data = localStorage.getItem("latestResponses");
       const testId = document.getElementById("testSelect").value;
