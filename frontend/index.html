@@ -1,86 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Login - Quiz App</title>
+  <meta charset="UTF-8">
+  <title>Quiz App - Login</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f4f8fb;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .container {
-      background: white;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-      width: 350px;
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
       text-align: center;
+      padding: 60px;
     }
+
     h2 {
       color: #333;
     }
-    input {
-      width: 90%;
+
+    input, button {
       padding: 10px;
-      margin: 10px 0;
+      margin: 10px;
+      font-size: 16px;
+      border-radius: 5px;
       border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 16px;
     }
+
     button {
-      background-color: #007bff;
+      background-color: #4CAF50;
       color: white;
-      padding: 10px 20px;
-      margin-top: 15px;
       border: none;
-      border-radius: 6px;
-      font-size: 16px;
       cursor: pointer;
-      width: 100%;
     }
+
     button:hover {
-      background-color: #0056b3;
+      background-color: #45a049;
     }
+
     #message {
       color: red;
       margin-top: 10px;
     }
+
     #serverStatus {
-      display: none;
       background: #fff3cd;
       border: 1px solid #ffeeba;
       color: #856404;
-      padding: 16px;
-      border-radius: 6px;
-      margin-bottom: 15px;
-      font-size: 14px;
+      padding: 20px;
+      margin: 30px auto;
+      width: 50%;
+      display: none;
+      border-radius: 8px;
     }
+
+    #loadingSpinner {
+      display: none;
+      font-size: 18px;
+      color: #333;
+      margin: 20px 0;
+    }
+
     #wakeStatus {
       display: block;
-      margin-top: 8px;
+      margin-top: 10px;
       font-size: 14px;
-      color: #333;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div id="serverStatus">
-      💤 <strong>Server is sleeping.</strong><br>
-      Please wait or click below to wake it up.
-      <button onclick="wakeServer()">🔄 Wake Server</button>
-      <span id="wakeStatus"></span>
-    </div>
 
-    <h2>🔐 Login to Quiz App</h2>
+  <h2>🔐 Welcome to Online Quiz App</h2>
 
-    <input type="text" id="username" placeholder="Username" />
-    <input type="password" id="password" placeholder="Password" />
+  <!-- Spinner -->
+  <div id="loadingSpinner">⏳ Checking server status...</div>
+
+  <!-- Server sleep message -->
+  <div id="serverStatus">
+    💤 <strong>Server is sleeping.</strong><br>
+    Please wait or click below to wake it up.
+    <br><br>
+    <button onclick="wakeServer()">🔄 Wake Server</button>
+    <span id="wakeStatus"></span>
+  </div>
+
+  <!-- Login Form -->
+  <div id="loginForm">
+    <label>👤 Username: <input type="text" id="username" /></label><br>
+    <label>🔒 Password: <input type="password" id="password" /></label><br>
     <button onclick="login()">Login</button>
     <p id="message"></p>
   </div>
@@ -88,7 +91,31 @@
   <script>
     const BASE_URL = "https://quiz-app-4087.onrender.com";
 
-    // ✅ Login Logic
+    // Check server status
+    async function checkServerStatus() {
+      document.getElementById("loadingSpinner").style.display = "block";
+      try {
+        const res = await fetch(`${BASE_URL}/tests`, { method: "GET" });
+        if (!res.ok) throw new Error();
+      } catch (err) {
+        document.getElementById("serverStatus").style.display = "block";
+      } finally {
+        document.getElementById("loadingSpinner").style.display = "none";
+      }
+    }
+
+    // Wake server manually
+    async function wakeServer() {
+      document.getElementById("wakeStatus").textContent = "⏳ Waking up server...";
+      try {
+        await fetch(BASE_URL);
+        document.getElementById("wakeStatus").textContent = "✅ Server is waking. Try login in 10–15 seconds.";
+      } catch {
+        document.getElementById("wakeStatus").textContent = "❌ Could not wake server. Try again in a few seconds.";
+      }
+    }
+
+    // Login logic
     function login() {
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value.trim();
@@ -105,28 +132,7 @@
       }
     }
 
-    // ✅ Check if server is sleeping
-    async function checkServerStatus() {
-      try {
-        const res = await fetch(`${BASE_URL}/tests`);
-        if (!res.ok) throw new Error();
-      } catch (err) {
-        document.getElementById("serverStatus").style.display = "block";
-      }
-    }
-
-    // ✅ Wake up server manually
-    async function wakeServer() {
-      document.getElementById("wakeStatus").textContent = "⏳ Waking server...";
-      try {
-        await fetch(BASE_URL);
-        document.getElementById("wakeStatus").textContent = "✅ Server is waking up. Try login again in a few seconds.";
-      } catch {
-        document.getElementById("wakeStatus").textContent = "❌ Failed to wake server.";
-      }
-    }
-
-    // Auto-check server status on load
+    // Run status check
     window.onload = checkServerStatus;
   </script>
 </body>
