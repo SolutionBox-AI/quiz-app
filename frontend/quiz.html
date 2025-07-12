@@ -3,108 +3,75 @@
 <head>
   <meta charset="UTF-8" />
   <title>Take Quiz</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: 'Inter', sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      padding: 20px;
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f8f9fa;
+    }
+    h1 {
       color: #333;
     }
-
-    .container {
-      max-width: 900px;
-      margin: 40px auto;
-      background: #fff;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
-      color: #1e293b;
-    }
-
     label {
-      font-weight: 600;
-      display: block;
-      margin-top: 20px;
-    }
-
-    input[type="text"], select {
-      width: 100%;
-      max-width: 500px;
-      padding: 10px;
-      margin-top: 8px;
       font-size: 16px;
+    }
+    input[type="text"], select {
+      padding: 8px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      width: 300px;
+    }
+    #quizContainer {
+      background: #fff;
+      padding: 20px;
       border: 1px solid #ccc;
       border-radius: 8px;
+      margin-top: 20px;
     }
-
-    .question {
-      margin-top: 30px;
-      padding: 20px;
-      background: #f9fafb;
-      border-radius: 10px;
-    }
-
-    .question h3 {
-      margin-bottom: 12px;
-      color: #1e293b;
-    }
-
-    .question label {
-      font-weight: normal;
-      display: block;
-      margin-bottom: 8px;
-    }
-
     button {
-      margin-top: 30px;
-      background: #4f46e5;
+      background: #007bff;
       color: white;
-      padding: 12px 20px;
       border: none;
+      padding: 10px 20px;
       font-size: 16px;
-      border-radius: 8px;
+      border-radius: 5px;
       cursor: pointer;
+      margin-top: 20px;
     }
-
     button:hover {
-      background: #4338ca;
+      background: #0056b3;
+    }
+    .spinner {
+      display: none;
+      font-size: 18px;
+      color: #555;
     }
   </style>
 </head>
 <body>
+  <h1>🎯 Start Your Quiz</h1>
 
-  <div class="container">
-    <h1>📝 Start Your Quiz</h1>
+  <label for="name">Your Name:</label><br>
+  <input type="text" id="name" placeholder="Enter your name" /><br><br>
 
-    <label for="name">Your Name:</label>
-    <input type="text" id="name" placeholder="Enter your name" />
+  <label for="testSelect">Choose Test:</label><br>
+  <select id="testSelect">
+    <option value="">-- Select Test --</option>
+  </select>
 
-    <label for="testSelect">Choose Test:</label>
-    <select id="testSelect">
-      <option value="">-- Select Test --</option>
-    </select>
+  <div class="spinner" id="spinner">⏳ Loading questions...</div>
 
-    <div id="quizContainer" style="display: none;"></div>
+  <div id="quizContainer" style="display: none;"></div>
 
-    <button id="submitBtn" onclick="submitQuiz()" style="display: none;">🚀 Submit Quiz</button>
-  </div>
+  <button id="submitBtn" onclick="submitQuiz()" style="display: none;">🚀 Submit Quiz</button>
 
   <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com";
+    const BASE_URL = "https://quiz-app-4087.onrender.com/api/quiz";
 
-    // Load all available tests
     async function loadTestList() {
       try {
         const res = await fetch(`${BASE_URL}/tests`);
         const tests = await res.json();
-
         const select = document.getElementById("testSelect");
         tests.forEach(test => {
           const option = document.createElement("option");
@@ -118,32 +85,34 @@
       }
     }
 
-    // Load questions when a test is selected
     async function loadQuestions(testId) {
+      document.getElementById("spinner").style.display = "block";
+      document.getElementById("quizContainer").style.display = "none";
+      document.getElementById("submitBtn").style.display = "none";
+
       try {
         const res = await fetch(`${BASE_URL}/test/${testId}/questions`);
         const questions = await res.json();
 
         const container = document.getElementById("quizContainer");
-        container.innerHTML = ""; // Clear old questions
+        container.innerHTML = "";
 
         questions.forEach((q, index) => {
-  const div = document.createElement("div");
-  let optionsHtml = "";
+          const div = document.createElement("div");
+          let optionsHtml = "";
 
-  q.options.forEach((option, i) => {
-    const optionLabel = String.fromCharCode(65 + i); // A, B, C, D
-    optionsHtml += `
-      <label>
-        <input type="radio" name="q${index}" value="${option}"> ${optionLabel}. ${option}
-      </label><br>
-    `;
-  });
+          q.options.forEach((option, i) => {
+            const label = String.fromCharCode(65 + i); // A, B, C, D
+            optionsHtml += `
+              <label>
+                <input type="radio" name="q${index}" value="${option}"> ${label}. ${option}
+              </label><br>
+            `;
+          });
 
-  div.innerHTML = `<h3>Q${index + 1}: ${q.question}</h3>${optionsHtml}<br>`;
-  container.appendChild(div);
-});
-
+          div.innerHTML = `<h3>Q${index + 1}: ${q.question}</h3>${optionsHtml}<br>`;
+          container.appendChild(div);
+        });
 
         container.dataset.questions = JSON.stringify(questions);
         container.style.display = "block";
@@ -151,17 +120,19 @@
       } catch (err) {
         alert("❌ Failed to load questions.");
         console.error(err);
+      } finally {
+        document.getElementById("spinner").style.display = "none";
       }
     }
 
-    // Submit quiz response
     async function submitQuiz() {
       const name = document.getElementById("name").value.trim();
       const testId = document.getElementById("testSelect").value;
-      const questions = JSON.parse(document.getElementById("quizContainer").dataset.questions);
+      const container = document.getElementById("quizContainer");
+      const questions = JSON.parse(container.dataset.questions);
 
       if (!name || !testId || questions.length === 0) {
-        alert("⚠️ Please enter name, select test, and answer questions.");
+        alert("⚠️ Please enter your name, select a test, and answer the questions.");
         return;
       }
 
@@ -183,8 +154,7 @@
         const result = await res.json();
         if (res.ok) {
           alert("✅ Quiz submitted successfully!");
-          window.location.href = "index.html";
-
+          window.location.href = "index.html"; // Redirect after submission
         } else {
           alert("❌ Submission failed: " + result.error);
         }
@@ -194,13 +164,11 @@
       }
     }
 
-    // Listen to test change
-    document.getElementById("testSelect").addEventListener("change", e => {
+    document.getElementById("testSelect").addEventListener("change", (e) => {
       const testId = e.target.value;
       if (testId) loadQuestions(testId);
     });
 
-    // Load tests on page load
     loadTestList();
   </script>
 </body>
