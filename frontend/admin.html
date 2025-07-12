@@ -1,83 +1,119 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Admin - View Responses</title>
+  <meta charset="UTF-8">
+  <title>Admin Panel - View Responses</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 40px; background-color: #f9f9f9; }
-    h2 { color: #2c3e50; }
-    pre {
-      background: #ecf0f1;
-      padding: 20px;
-      max-height: 500px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f9f9f9;
+    }
+    h2 {
+      color: #333;
     }
     button {
+      padding: 10px 16px;
       margin: 5px;
-      padding: 10px 18px;
-      font-size: 16px;
-      background-color: #3498db;
-      color: white;
+      font-size: 14px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      background-color: #007bff;
+      color: white;
     }
     button:hover {
-      background-color: #2980b9;
+      background-color: #0056b3;
     }
     select {
       font-size: 16px;
-      padding: 6px;
+      padding: 8px;
+    }
+    pre {
+      background: #fff;
+      padding: 20px;
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 5px;
     }
   </style>
 </head>
 <body>
 
+  <script>
+    const role = localStorage.getItem("role");
+    if (role !== "admin") {
+      alert("Access denied. Login as admin.");
+      window.location.href = "index.html";
+    }
+  </script>
 
+  <h2>📊 Admin Panel - View & Download Responses</h2>
 
-<h2>📊 Admin Panel - View & Download Responses</h2>
+  <label for="testSelect">Select Test:</label>
+  <select id="testSelect">
+    <option value="">-- Loading Tests --</option>
+  </select>
+  <br><br>
 
-<label>Select Test:</label>
-<select id="testSelect"><option>Loading...</option></select>
-<br><br>
+  <button onclick="viewResponses()">👁 View Responses</button>
+  <button onclick="downloadResponses()">📥 Download JSON</button>
+  <button onclick="window.location.href='form.html'">📝 Create New Test</button>
+  <button onclick="logout()">🚪 Logout</button>
 
-<button onclick="viewResponses()">👁 View Responses</button>
-<button onclick="downloadResponses()">📥 Download JSON</button>
-<button onclick="window.location.href='form.html'">📝 Create New Test</button>
-<button onclick="logout()">🚪 Logout</button>
+  <pre id="responseOutput">No responses loaded yet.</pre>
 
-<pre id="responseOutput">No responses loaded yet.</pre>
+  <script>
+    const BASE_URL = "https://quiz-app-4087.onrender.com";
 
-<script>
-  const BASE_URL = "https://quiz-app-4087.onrender.com/api/quiz";
+    window.onload = () => {
+      fetch(`${BASE_URL}/tests`)
+        .then(res => res.json())
+        .then(tests => {
+          const sel = document.getElementById("testSelect");
+          sel.innerHTML = '<option value="">-- Select Test --</option>';
+          tests.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = t;
+            sel.appendChild(opt);
+          });
+        })
+        .catch(() => alert("❌ Failed to load tests."));
+    };
 
-  // Load test list
-  window.onload = () => {
-    fetch(`${BASE_URL}/tests`)
-      .then(res => res.json())
-      .then(tests => {
-        const sel = document.getElementById('testSelect');
-        sel.innerHTML = '<option value="">-- Select Test --</option>';
-        tests.forEach(t => {
-          const opt = document.createElement('option');
-          opt.value = t;
-          opt.textContent = t;
-          sel.appendChild(opt);
-        });
-      })
-      .catch(err => {
-        console.error(err);
-        alert("❌ Failed to load test list.");
-      });
-  };
+    function viewResponses() {
+      const testId = document.getElementById("testSelect").value;
+      if (!testId) return alert("Select a test.");
+      fetch(`${BASE_URL}/test/${testId}/responses`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("responseOutput").textContent = JSON.stringify(data, null, 2);
+          localStorage.setItem("latestResponses", JSON.stringify(data));
+        })
+        .catch(() => alert("❌ Failed to fetch responses."));
+    }
 
-  // View student responses
-  function viewResponses() {
-    const testId = document.getElementById('testSelect').value;
-    if (!testId) return alert("Please select a test.");
+    function downloadResponses() {
+      const data = localStorage.getItem("latestResponses");
+      const testId = document.getElementById("testSelect").value;
+      if (!data) return alert("Nothing to download.");
+      const blob = new Blob([data], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${testId}-responses.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
 
-    fetch(`${BASE_URL}/test/${testId}/responses`)
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('responseOutput').textContent = JSON.stringify(data, null, 2);
-        sessionStorage.setItem(
+    function logout() {
+      localStorage.clear();
+      window.location.href = "index.html";
+    }
+  </script>
+</body>
+</html>
