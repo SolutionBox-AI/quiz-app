@@ -44,21 +44,23 @@ router.post("/test/:testId/save", async (req, res) => {
 });
 
 // POST: Submit a student's response
+// POST: Submit a student's response
 router.post("/test/:testId/submit", async (req, res) => {
   const { testId } = req.params;
-  const { name, answers } = req.body;
+  const { name, userCode, answers } = req.body;
 
-  if (!name || !Array.isArray(answers)) {
-    return res.status(400).json({ error: "Invalid response data" });
+  if (!name || !userCode || !Array.isArray(answers)) {
+    return res.status(400).json({ error: 'Invalid data' });
   }
 
   try {
-    const saved = await Response.create({ testId, name, answers });
+    const saved = await Response.create({ testId, name, userCode, answers });
     res.status(200).json({ message: "Response saved", data: saved });
   } catch (err) {
     res.status(500).json({ error: "Failed to save response" });
   }
 });
+
 
 // GET: All responses for a test (admin)
 router.get("/test/:testId/responses", async (req, res) => {
