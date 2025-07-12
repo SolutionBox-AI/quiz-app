@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 
 const responseSchema = new mongoose.Schema({
   testId: String,
-  name: String,
   userCode: String,
+  name: String,
   answers: [
     {
       question: String,
