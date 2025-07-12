@@ -1,168 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Admin - View Responses</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>Login - Quiz App</title>
   <style>
     body {
-      font-family: 'Inter', sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      color: #333;
+      font-family: Arial, sans-serif;
+      background: #f5f8fa;
+      display: flex;
+      height: 100vh;
+      justify-content: center;
+      align-items: center;
     }
-
-    .container {
-      max-width: 960px;
-      margin: 40px auto;
-      background: white;
-      border-radius: 12px;
+    .login-box {
+      background: #fff;
       padding: 30px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
     }
-
-    h2 {
-      color: #1e293b;
-      margin-bottom: 20px;
-    }
-
-    label {
-      font-weight: 600;
-      margin-bottom: 10px;
-      display: block;
-    }
-
-    select {
-      font-size: 16px;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+    input {
       width: 100%;
-      max-width: 400px;
-      margin-bottom: 20px;
-    }
-
-    button {
-      background: #4f46e5;
-      color: white;
-      padding: 10px 18px;
-      border: none;
-      border-radius: 8px;
+      padding: 10px;
+      margin-top: 10px;
       font-size: 16px;
-      margin: 8px 8px 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #007bff;
+      border: none;
+      color: white;
+      font-size: 16px;
+      border-radius: 5px;
       cursor: pointer;
     }
-
     button:hover {
-      background: #4338ca;
+      background: #0056b3;
     }
-
-    a button {
-      background: #6b7280;
-    }
-
-    a button:hover {
-      background: #4b5563;
-    }
-
-    pre {
-      background: #f0f0f0;
-      padding: 20px;
-      border-radius: 10px;
-      max-height: 500px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      margin-top: 20px;
+    #message {
+      color: red;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
 
- 
-  <div class="container">
-    <h2>📊 Admin Panel - View & Download Responses</h2>
-
-    <label for="testSelect">Select Test:</label>
-    <select id="testSelect">
-      <option>Loading...</option>
-    </select>
-
-    <div>
-      <button onclick="viewResponses()">👁 View Responses</button>
-      <button onclick="downloadResponses()">📥 Download JSON</button>
-      <button onclick="window.location.href='form.html'">📝 Create New Test</button>
-      <button onclick="logout()">🚪 Logout</button>
-    </div>
-
-    <pre id="responseOutput">No responses loaded yet.</pre>
+  <div class="login-box">
+    <h2>🔐 Login - Online Quiz App</h2>
+    <input type="text" id="username" placeholder="Username (admin/student)" />
+    <input type="password" id="password" placeholder="Password" />
+    <button onclick="login()">Login</button>
+    <div id="message"></div>
   </div>
 
   <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com";
+    function login() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const message = document.getElementById("message");
 
-    // Load available test IDs on page load
-    window.onload = () => {
-      fetch(`${BASE_URL}/tests`)
-        .then(res => res.json())
-        .then(tests => {
-          const sel = document.getElementById('testSelect');
-          sel.innerHTML = '<option value="">-- Select Test --</option>';
-          tests.forEach(testId => {
-            const opt = document.createElement('option');
-            opt.value = testId;
-            opt.textContent = testId;
-            sel.appendChild(opt);
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          alert("❌ Failed to load test list.");
-        });
-    };
-
-    // View student responses
-    function viewResponses() {
-      const testId = document.getElementById('testSelect').value;
-      if (!testId) return alert("Please select a test.");
-
-      fetch(`${BASE_URL}/test/${testId}/responses`)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById('responseOutput').textContent = JSON.stringify(data, null, 2);
-          sessionStorage.setItem("latestResponses", JSON.stringify(data));
-        })
-        .catch(err => {
-          console.error(err);
-          alert("❌ Failed to load responses.");
-        });
+      if (username === "admin" && password === "admin123") {
+        localStorage.setItem("role", "admin");
+        window.location.href = "admin.html";
+      } else if (username === "student" && password === "student123") {
+        localStorage.setItem("role", "student");
+        window.location.href = "quiz.html";
+      } else {
+        message.textContent = "❌ Invalid credentials. Try again.";
+      }
     }
 
-    // Download as JSON
-    function downloadResponses() {
-      const testId = document.getElementById('testSelect').value;
-      const data = sessionStorage.getItem("latestResponses");
-
-      if (!testId) return alert("Please select a test.");
-      if (!data) return alert("No responses to download. Click 'View Responses' first.");
-
-      const blob = new Blob([data], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-
-      a.href = url;
-      a.download = `${testId}-responses.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
-    // Logout
-    function logout() {
-      sessionStorage.clear();
-      window.location.href = "index.html";
-    }
+    // Optional auto redirect if already logged in
+    const role = localStorage.getItem("role");
+    if (role === "admin") window.location.href = "admin.html";
+    else if (role === "student") window.location.href = "quiz.html";
   </script>
+
 </body>
 </html>
-
