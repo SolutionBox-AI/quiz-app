@@ -65,6 +65,7 @@
   <table id="scoreTable">
     <thead>
       <tr>
+        <th>User Code</th>
         <th>Name</th>
         <th>Correct Answers</th>
         <th>Total Questions</th>
@@ -122,7 +123,8 @@
           });
 
           const row = `<tr>
-            <td>${response.name}</td>
+            <td>${response.userCode || "N/A"}</td>
+            <td>${response.name}</td>          
             <td>${correct}</td>
             <td>${questions.length}</td>
             <td>${((correct / questions.length) * 100).toFixed(2)}%</td>
