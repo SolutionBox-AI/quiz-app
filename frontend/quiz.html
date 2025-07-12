@@ -51,6 +51,9 @@
 <body>
   <h1>🎯 Start Your Quiz</h1>
 
+  <label for="userCode">Your Code:</label>
+  <input type="text" id="userCode" placeholder="e.g., ABC123" /><br><br>
+
   <label for="name">Your Name:</label><br>
   <input type="text" id="name" placeholder="Enter your name" /><br><br>
 
@@ -126,14 +129,16 @@
     }
 
     async function submitQuiz() {
+      
       const name = document.getElementById("name").value.trim();
+      const userCode = document.getElementById("userCode").value.trim();
       const testId = document.getElementById("testSelect").value;
       const container = document.getElementById("quizContainer");
       const questions = JSON.parse(container.dataset.questions);
 
-      if (!name || !testId || questions.length === 0) {
-        alert("⚠️ Please enter your name, select a test, and answer the questions.");
-        return;
+      if (!name || !userCode || !testId || questions.length === 0) {
+        alert("Please enter name, user code, select test, and answer questions.");
+      return;
       }
 
       const answers = questions.map((q, index) => {
@@ -148,7 +153,7 @@
         const res = await fetch(`${BASE_URL}/test/${testId}/submit`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, answers })
+          body: JSON.stringify({ name, userCode, answers })
         });
 
         const result = await res.json();
