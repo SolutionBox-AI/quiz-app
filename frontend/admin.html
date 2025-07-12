@@ -32,7 +32,7 @@
     const BASE_URL = "https://quiz-app-4087.onrender.com"; // Replace this
 
     window.onload = () => {
-      fetch(`${BASE_URL}/api/quiz/tests`)
+      fetch(`${BASE_URL}/tests`)
         .then(res => res.json())
         .then(tests => {
           const sel = document.getElementById('testSelect');
