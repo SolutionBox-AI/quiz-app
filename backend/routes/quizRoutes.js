@@ -53,18 +53,22 @@ router.post('/test/:testId/submit', async (req, res) => {
   const { testId } = req.params;
   const { name, answers } = req.body;
 
+  console.log("Incoming submission:", { testId, name, answers });
+
   if (!name || !Array.isArray(answers)) {
     return res.status(400).json({ error: 'Invalid data' });
   }
 
   try {
     const saved = await Response.create({ testId, name, answers });
+    console.log("✅ Saved response:", saved);
     res.status(200).json({ message: 'Response saved', data: saved });
   } catch (err) {
-    console.error('❌ Save error:', err);
+    console.error('❌ Save error:', err); // See full error in Render logs
     res.status(500).json({ error: 'Failed to save response' });
   }
 });
+
 
 // ✅ GET responses for a test
 router.get('/test/:testId/responses', async (req, res) => {
