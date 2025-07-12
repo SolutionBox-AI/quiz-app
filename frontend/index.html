@@ -1,31 +1,95 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
   <title>Login - Quiz App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, margin: 40px; }
-    input { margin: 5px 0; }
-    #message { color: red; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+
+    .container {
+      max-width: 400px;
+      margin: 100px auto;
+      background: white;
+      padding: 40px 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #1e293b;
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+
+    button {
+      margin-top: 30px;
+      width: 100%;
+      padding: 12px;
+      background: #4f46e5;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #4338ca;
+    }
+
+    #message {
+      margin-top: 20px;
+      color: red;
+      text-align: center;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>
-  
-  <h2>Login - Online Quiz App</h2>
 
-  <label>Username: <input type="text" id="username" /></label><br>
-  <label>Password: <input type="password" id="password" /></label><br>
-  <button onclick="login()">Login</button>
+  <div class="container">
+    <h2>🔐 Login - Quiz App</h2>
 
-  
+    <label for="username">Username</label>
+    <input type="text" id="username" placeholder="Enter username" />
 
-  <p id="message"></p>
+    <label for="password">Password</label>
+    <input type="password" id="password" placeholder="Enter password" />
+
+    <button onclick="login()">Login</button>
+
+    <p id="message"></p>
+  </div>
 
   <script>
     function logout() {
       sessionStorage.clear();
       window.location.href = "index.html";
     }
-    
+
     function login() {
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value.trim();
@@ -38,9 +102,10 @@
         sessionStorage.setItem("role", "student");
         window.location.href = "student.html";
       } else {
-        message.textContent = "Invalid credentials. Try again.";
+        message.textContent = "❌ Invalid credentials. Please try again.";
       }
     }
   </script>
+
 </body>
 </html>
