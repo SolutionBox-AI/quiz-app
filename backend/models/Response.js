@@ -1,13 +1,19 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const responseSchema = new mongoose.Schema({
-  name: String,
-  town: String,
-  code: String,
   testId: String,
-  answers: [String],
-  submittedAt: Date
+  name: String,
+  answers: [
+    {
+      question: String,
+      selected: String
+    }
+  ],
+  submittedAt: {
+    type: Date,
+    default: Date.now
+  }
 });
 
-module.exports = mongoose.model('Response', responseSchema);
+module.exports = mongoose.model("Response", responseSchema);
 
