@@ -3,11 +3,16 @@
 <head>
   <title>Admin - View Responses</title>
   <style>
-    body { font-family: Arial; margin: 40px; }
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    pre { background: #f0f0f0; padding: 20px; max-height: 500px; overflow-y: auto; }
+    button { margin: 5px; padding: 8px 16px; font-size: 16px; }
+    select { font-size: 16px; padding: 4px; }
   </style>
 </head>
 <body>
+
   <script>
+    // Restrict access to admins only
     if (sessionStorage.getItem("role") !== "admin") {
       alert("Access denied. Login as admin.");
       window.location.href = "index.html";
@@ -18,25 +23,25 @@
 
   <label>Select Test:</label>
   <select id="testSelect"><option>Loading...</option></select>
-  <br> <br>
+  <br><br>
 
   <button onclick="viewResponses()">👁 View Responses</button>
-  <button onclick="downloadResponses()">📥 Download Responses</button>
-<a href="form.html">
-  <button>📥 Create Test</button> </a>
+  <button onclick="downloadResponses()">📥 Download JSON</button>
+  <button onclick="window.location.href='form.html'">📝 Create New Test</button>
   <button onclick="logout()">🚪 Logout</button>
 
-  <pre id="responseOutput" style="background:#f0f0f0; padding:20px;"></pre>
+  <pre id="responseOutput">No responses loaded yet.</pre>
 
   <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com"; // Replace this
+    const BASE_URL = "https://quiz-app-4087.onrender.com";
 
+    // Load test list on page load
     window.onload = () => {
-      fetch(`${BASE_URL}/test`)
+      fetch(`${BASE_URL}/tests`)
         .then(res => res.json())
         .then(tests => {
           const sel = document.getElementById('testSelect');
-          sel.innerHTML = '<option value="">--Select Test--</option>';
+          sel.innerHTML = '<option value="">-- Select Test --</option>';
           tests.forEach(t => {
             const opt = document.createElement('option');
             opt.value = t;
@@ -44,26 +49,47 @@
             sel.appendChild(opt);
           });
         })
-        .catch(err => alert("Failed to load test list."));
+        .catch(err => {
+          console.error(err);
+          alert("❌ Failed to load test list.");
+        });
     };
 
+    // View student responses
     function viewResponses() {
       const testId = document.getElementById('testSelect').value;
-      if (!testId) return alert("Select a test.");
+      if (!testId) return alert("Please select a test.");
 
-      fetch(`${BASE_URL}/uploads/${testId}/responses.json`)
+      fetch(`${BASE_URL}/test/${testId}/responses`)
         .then(res => res.json())
         .then(data => {
           document.getElementById('responseOutput').textContent = JSON.stringify(data, null, 2);
+          sessionStorage.setItem("latestResponses", JSON.stringify(data));
         })
-        .catch(() => alert("Failed to load responses."));
+        .catch(err => {
+          console.error(err);
+          alert("❌ Failed to load responses.");
+        });
     }
 
+    // Download responses as JSON file
     function downloadResponses() {
+      const data = sessionStorage.getItem("latestResponses");
       const testId = document.getElementById('testSelect').value;
-      if (!testId) return alert("Select a test.");
 
-      window.open(`${BASE_URL}/uploads/${testId}/responses.json`, '_blank');
+      if (!data) return alert("No responses to download. Click 'View Responses' first.");
+      if (!testId) return alert("Please select a test.");
+
+      const blob = new Blob([data], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${testId}-responses.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
     function logout() {
