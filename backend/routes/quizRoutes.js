@@ -4,33 +4,31 @@ const router = express.Router();
 const Question = require("../models/Question");
 const Response = require("../models/Response");
 
-// GET list of test IDs
+// GET all test IDs
 router.get("/tests", async (req, res) => {
   try {
     const testIds = await Question.distinct("testId");
     res.json(testIds);
   } catch (err) {
-    console.error("❌ Error fetching test IDs:", err);
     res.status(500).json({ error: "Failed to fetch test list" });
   }
 });
 
-// GET questions for a test
+// GET all questions for a test
 router.get("/test/:testId/questions", async (req, res) => {
   try {
     const questions = await Question.find({ testId: req.params.testId });
     res.json(questions);
   } catch (err) {
-    console.error("❌ Error fetching questions:", err);
     res.status(500).json({ error: "Failed to fetch questions" });
   }
 });
 
-// POST: Save a test (admin)
+// POST: Save questions for a test (admin)
 router.post("/test/:testId/save", async (req, res) => {
   const testId = req.params.testId;
-  const body = req.body;
-  const questions = Array.isArray(body) ? body : body.questions;
+  const raw = req.body;
+  const questions = Array.isArray(raw) ? raw : raw.questions;
 
   if (!Array.isArray(questions) || questions.length === 0) {
     return res.status(400).json({ error: "Invalid questions data" });
@@ -41,36 +39,33 @@ router.post("/test/:testId/save", async (req, res) => {
     await Question.insertMany(questions.map(q => ({ ...q, testId })));
     res.json({ message: "Test saved successfully" });
   } catch (err) {
-    console.error("❌ Error saving test:", err);
     res.status(500).json({ error: "Failed to save test" });
   }
 });
 
-// POST: Submit student quiz response
+// POST: Submit a student's response
 router.post("/test/:testId/submit", async (req, res) => {
   const { testId } = req.params;
   const { name, answers } = req.body;
 
   if (!name || !Array.isArray(answers)) {
-    return res.status(400).json({ error: "Invalid data" });
+    return res.status(400).json({ error: "Invalid response data" });
   }
 
   try {
     const saved = await Response.create({ testId, name, answers });
     res.status(200).json({ message: "Response saved", data: saved });
   } catch (err) {
-    console.error("❌ Error saving response:", err);
     res.status(500).json({ error: "Failed to save response" });
   }
 });
 
-// GET responses for a test (admin)
+// GET: All responses for a test (admin)
 router.get("/test/:testId/responses", async (req, res) => {
   try {
     const responses = await Response.find({ testId: req.params.testId });
     res.json(responses);
   } catch (err) {
-    console.error("❌ Error fetching responses:", err);
     res.status(500).json({ error: "Failed to fetch responses" });
   }
 });
