@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>View Test Questions</title>
+  <title>View & Manage Test Questions</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -25,7 +25,7 @@
     select, button {
       padding: 8px 12px;
       font-size: 16px;
-      margin: 8px 0;
+      margin: 8px 5px 16px 0;
     }
 
     .question-block {
@@ -34,6 +34,7 @@
       margin-bottom: 16px;
       padding: 16px;
       border-radius: 8px;
+      position: relative;
     }
 
     .question-block h4 {
@@ -43,85 +44,23 @@
     .option {
       margin-left: 16px;
     }
-  </style>
-</head>
-<body>
 
-  <button id="logoutBtn" onclick="logout()">🚪 Logout</button>
-
-  <h2>📋 View Test Questions</h2>
-
-  <label for="testSelect">Select Test:</label>
-  <select id="testSelect"><option value="">Loading...</option></select>
-  <button onclick="loadQuestions()">📄 Load Questions</button>
-
-  <div id="questionsDisplay"></div>
-
-  <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com";
-
-    function logout() {
-      localStorage.clear();
-      window.location.href = "index.html";
+    .deleteBtn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #ff4d4d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      cursor: pointer;
     }
 
-    // Load tests on page load
-    window.onload = () => {
-      fetch(`${BASE_URL}/tests`)
-        .then(res => res.json())
-        .then(tests => {
-          const sel = document.getElementById('testSelect');
-          sel.innerHTML = '<option value="">-- Select Test --</option>';
-          tests.forEach(t => {
-            const opt = document.createElement('option');
-            opt.value = t;
-            opt.textContent = t;
-            sel.appendChild(opt);
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          alert("❌ Failed to load test list.");
-        });
-    };
-
-    // Load and show questions of selected test
-    function loadQuestions() {
-      const testId = document.getElementById('testSelect').value;
-      const display = document.getElementById('questionsDisplay');
-      display.innerHTML = "";
-
-      if (!testId) return alert("Please select a test.");
-
-      fetch(`${BASE_URL}/test/${testId}/questions`)
-        .then(res => res.json())
-        .then(questions => {
-          if (!questions.length) {
-            display.innerHTML = "<p>No questions found.</p>";
-            return;
-          }
-
-          questions.forEach((q, index) => {
-            const div = document.createElement("div");
-            div.className = "question-block";
-            div.innerHTML = `
-              <h4>Q${index + 1}: ${q.question}</h4>
-              <p class="option">A. ${q.options[0]}</p>
-              <p class="option">B. ${q.options[1]}</p>
-              <p class="option">C. ${q.options[2]}</p>
-              <p class="option">D. ${q.options[3]}</p>
-              <p><strong>✅ Correct Answer:</strong> ${q.correctAnswer}</p>
-            `;
-            display.appendChild(div);
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          alert("❌ Failed to load questions.");
-        });
-    }
-  </script>
-
-</body>
-</html>
-
+    .saveBtn {
+      background: green;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 10px 16px;
+      font-size: 16
