@@ -1,1 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>📈 View Quiz Scores</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f4f6f9;
+    }
+    h2 {
+      color: #333;
+    }
+    select, button {
+      font-size: 16px;
+      padding: 8px 12px;
+      margin: 10px 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: #007bff;
+      color: white;
+    }
+    #scoreTable {
+      display: none;
+    }
+    #message {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+  <script>
+    if (sessionStorage.getItem("role") !== "admin") {
+      alert("Access denied. Login as admin.");
+      window.location.href = "index.html";
+    }
+  </script>
+
+  <h2>📊 Admin Panel - View Quiz Scores</h2>
+
+  <label>Select Test:</label>
+  <select id="testSelect">
+    <option value="">-- Select Test --</option>
+  </select>
+
+  <button onclick="loadScores()">📥 Load Scores</button>
+  <button onclick="downloadCSV()">⬇️ Download CSV</button>
+  <button onclick="window.location.href='admin.html'">🏠 Back to Admin</button>
+
+  <p id="message"></p>
+
+  <table id="scoreTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Correct Answers</th>
+        <th>Total Questions</th>
+        <th>Score (%)</th>
+      </tr>
+    </thead>
+    <tbody id="scoreBody"></tbody>
+  </table>
+
+  <script>
+    const BASE_URL = "https://quiz-app-4087.onrender.com";
+
+    // Load test names
+    window.onload = () => {
+      fetch(`${BASE_URL}/tests`)
+        .then(res => res.json())
+        .then(tests => {
+          const select = document.getElementById('testSelect');
+          select.innerHTML = '<option value="">-- Select Test --</option>';
+          tests.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = t;
+            select.appendChild(opt);
+          });
+        })
+        .catch(() => document.getElementById("message").textContent = "❌ Failed to load test list.");
+    };
+
+    async function loadScores() {
+      const testId = document.getElementById('testSelect').value;
+      const message = document.getElementById("message");
+      message.textContent = "";
+      document.getElementById("scoreTable").style.display = "none";
+
+      if (!testId) {
+        message.textContent = "⚠️ Please select a test.";
+        return;
+      }
+
+      try {
+        const res = await fetch(`${BASE_URL}/test/${testId}/responses`);
+        const data = await res.json();
+
+        const resQ = await fetch(`${BASE_URL}/test/${testId}/questions`);
+        const questions = await resQ.json();
+
+        const tbody = document.getElementById('scoreBody');
+        tbody.innerHTML = "";
+
+        data.forEach(response => {
+          let correct = 0;
+          response.answers.forEach(ans => {
+            const question = questions.find(q => q.question === ans.question);
+            if (question && question.correctAnswer === ans.selected) correct++;
+          });
+
+          const row = `<tr>
+            <td>${response.name}</td>
+            <td>${correct}</td>
+            <td>${questions.length}</td>
+            <td>${((correct / questions.length) * 100).toFixed(2)}%</td>
+          </tr>`;
+          tbody.innerHTML += row;
+        });
+
+        document.getElementById("scoreTable").style.display = "table";
+      } catch (err) {
+        console.error(err);
+        message.textContent = "❌ Failed to load scores.";
+      }
+    }
+
+    function downloadCSV() {
+      const rows = [["Name", "Correct Answers", "Total Questions", "Score (%)"]];
+      document.querySelectorAll("#scoreBody tr").forEach(tr => {
+        const row = [];
+        tr.querySelectorAll("td").forEach(td => row.push(td.textContent));
+        rows.push(row);
+      });
+
+      const csvContent = rows.map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "quiz-scores.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  </script>
+
+</body>
+</html>
 
