@@ -1,10 +1,9 @@
 const express = require("express");
 const router = express.Router();
-
 const Question = require("../models/Question");
 const Response = require("../models/Response");
 
-// GET all test IDs
+// ✅ GET all test IDs
 router.get("/tests", async (req, res) => {
   try {
     const testIds = await Question.distinct("testId");
@@ -14,7 +13,7 @@ router.get("/tests", async (req, res) => {
   }
 });
 
-// GET all questions for a test
+// ✅ GET all questions for a test
 router.get("/test/:testId/questions", async (req, res) => {
   try {
     const questions = await Question.find({ testId: req.params.testId });
@@ -24,7 +23,7 @@ router.get("/test/:testId/questions", async (req, res) => {
   }
 });
 
-// POST: Save questions for a test (admin)
+// ✅ Save or update test questions (admin)
 router.post("/test/:testId/save", async (req, res) => {
   const testId = req.params.testId;
   const raw = req.body;
@@ -43,22 +42,21 @@ router.post("/test/:testId/save", async (req, res) => {
   }
 });
 
-// POST: Submit a student's response
-// POST: Submit a student's response
+// ✅ Submit a student's response
 router.post("/test/:testId/submit", async (req, res) => {
   const { testId } = req.params;
   const { name, userCode, answers } = req.body;
-  const existing = await Response.findOne({ testId, userCode });
-
-if (existing) {
-  return res.status(400).json({ error: "You have already submitted this test." });
-}
 
   if (!name || !userCode || !Array.isArray(answers)) {
-    return res.status(400).json({ error: 'Invalid data' });
+    return res.status(400).json({ error: "Invalid data" });
   }
 
   try {
+    const existing = await Response.findOne({ testId, userCode });
+    if (existing) {
+      return res.status(400).json({ error: "You have already submitted this test." });
+    }
+
     const saved = await Response.create({ testId, name, userCode, answers });
     res.status(200).json({ message: "Response saved", data: saved });
   } catch (err) {
@@ -66,8 +64,7 @@ if (existing) {
   }
 });
 
-
-// GET: All responses for a test (admin)
+// ✅ Get all responses for a test (admin)
 router.get("/test/:testId/responses", async (req, res) => {
   try {
     const responses = await Response.find({ testId: req.params.testId });
