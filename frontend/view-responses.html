@@ -3,10 +3,40 @@
 <head>
   <title>View & Download Responses</title>
   <style>
-    body { font-family: Arial; margin: 40px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+    }
+
+    select, button {
+      font-size: 16px;
+      padding: 8px;
+      margin-right: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f0f0f0;
+    }
+
+    .action-buttons {
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
+
   <script>
     if (sessionStorage.getItem("role") !== "admin") {
       alert("Access denied. Please login as admin.");
@@ -17,42 +47,120 @@
   <h2>📊 View & Download Quiz Responses</h2>
 
   <label for="testSelect">Select Test:</label>
-  <select id="testSelect">
-    <option value="">--Loading tests--</option>
-  </select>
-  <button onclick="downloadResponses()">Download Responses</button>
-  <button onclick="logout()">Logout</button>
+  <select id="testSelect"><option>Loading tests...</option></select>
+  <div class="action-buttons">
+    <button onclick="loadResponses()">👁 View Responses</button>
+    <button onclick="downloadCSV()">📥 Download CSV</button>
+    <button onclick="downloadJSON()">📥 Download JSON</button>
+    <button onclick="window.location.href='admin.html'">🏠 Admin Home</button>
+    <button onclick="logout()">🚪 Logout</button>
+  </div>
+
+  <div id="responseSection"></div>
 
   <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com"; // Replace with your backend URL
+    const BASE_URL = "https://quiz-app-4087.onrender.com";
 
-    // Load available test folders into dropdown
+    // Load test list
     window.onload = () => {
-      console.log(BASE_URL);
       fetch(`${BASE_URL}/api/quiz/tests`)
         .then(res => res.json())
         .then(tests => {
-          const select = document.getElementById('testSelect');
-          select.innerHTML = '<option value="">--Select Test--</option>';
-          tests.forEach(test => {
-            const opt = document.createElement('option');
-            opt.value = test;
-            opt.textContent = test;
-            select.appendChild(opt);
+          const sel = document.getElementById("testSelect");
+          sel.innerHTML = `<option value="">--Select Test--</option>`;
+          tests.forEach(t => {
+            const opt = document.createElement("option");
+            opt.value = t;
+            opt.textContent = t;
+            sel.appendChild(opt);
           });
         })
-        .catch(err => {
-          alert("Failed to load test list.");
-          console.error(err);
-        });
+        .catch(() => alert("❌ Failed to load test list."));
     };
 
-    function downloadResponses() {
-      const testId = document.getElementById('testSelect').value;
+    let responseData = [];
+
+    function loadResponses() {
+      const testId = document.getElementById("testSelect").value;
       if (!testId) return alert("Please select a test.");
 
-      const url = `${BASE_URL}/uploads/${testId}/responses.json`;
-      window.open(url, '_blank');
+      fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`)
+        .then(res => res.json())
+        .then(data => {
+          responseData = data;
+          renderTable(data);
+        })
+        .catch(() => alert("❌ Failed to fetch responses."));
+    }
+
+    function renderTable(data) {
+      const section = document.getElementById("responseSection");
+      if (data.length === 0) {
+        section.innerHTML = "<p>No responses found.</p>";
+        return;
+      }
+
+      let html = `<table><thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>User Code</th>
+          <th>Submission Date</th>
+          <th>Question</th>
+          <th>Selected Answer</th>
+        </tr></thead><tbody>`;
+
+      data.forEach((entry, index) => {
+        entry.answers.forEach((ans, aIndex) => {
+          html += `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${entry.name || "-"}</td>
+              <td>${entry.userCode || "-"}</td>
+              <td>${new Date(entry.submittedAt).toLocaleString()}</td>
+              <td>${ans.question}</td>
+              <td>${ans.selected}</td>
+            </tr>
+          `;
+        });
+      });
+
+      html += "</tbody></table>";
+      section.innerHTML = html;
+    }
+
+    function downloadCSV() {
+      if (responseData.length === 0) return alert("No data to download.");
+
+      let csv = "Name,User Code,Submission Date,Question,Selected Answer\n";
+
+      responseData.forEach(entry => {
+        entry.answers.forEach(ans => {
+          csv += `"${entry.name}","${entry.userCode}","${new Date(entry.submittedAt).toLocaleString()}","${ans.question}","${ans.selected}"\n`;
+        });
+      });
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "quiz-responses.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function downloadJSON() {
+      if (responseData.length === 0) return alert("No data to download.");
+
+      const blob = new Blob([JSON.stringify(responseData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "quiz-responses.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
 
     function logout() {
