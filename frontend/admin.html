@@ -86,16 +86,28 @@ t <!DOCTYPE html>
     };
 
     function viewResponses() {
-      const testId = document.getElementById("testSelect").value;
-      if (!testId) return alert("Select a test.");
-      fetch(`${BASE_URL}/test/${testId}/responses`)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById("responseOutput").textContent = JSON.stringify(data, null, 2);
-          localStorage.setItem("latestResponses", JSON.stringify(data));
-        })
-        .catch(() => alert("❌ Failed to fetch responses."));
-    }
+  const testId = document.getElementById('testSelect').value;
+  if (!testId) return alert("Please select a test.");
+
+  fetch(`${BASE_URL}/test/${testId}/responses`)
+    .then(res => res.json())
+    .then(data => {
+      let output = "";
+      data.forEach((entry, i) => {
+        output += `👤 ${entry.name} (${entry.userCode || "No Code"})\n`;
+        entry.answers.forEach((ans, index) => {
+          output += `Q${index + 1}: ${ans.question}\n  👉 Selected: ${ans.selected}\n`;
+        });
+        output += `📅 Submitted: ${new Date(entry.submittedAt).toLocaleString()}\n\n`;
+      });
+
+      document.getElementById('responseOutput').textContent = output || "No responses found.";
+    })
+    .catch(err => {
+      console.error(err);
+      alert("❌ Failed to load responses.");
+    });
+}
 
     function downloadResponses() {
       const data = localStorage.getItem("latestResponses");
