@@ -1,8 +1,9 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const responseSchema = new mongoose.Schema({
-  testId: { type: String, required: true },
-  name: { type: String, required: true },
+  testId: String,
+  name: String,
+  userCode: String,
   answers: [
     {
       question: String,
@@ -15,4 +16,5 @@ const responseSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model("Response", responseSchema);
+module.exports = mongoose.model('Response', responseSchema);
+
