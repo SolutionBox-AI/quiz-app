@@ -29,24 +29,33 @@ router.get('/test/:testId/questions', async (req, res) => {
 });
 
 // ✅ POST - Save test questions (admin)
+
 router.post('/test/:testId/save', async (req, res) => {
   const testId = req.params.testId;
   const questions = req.body;
 
+  console.log("✅ Incoming test save request:", { testId, questions });
+
   if (!Array.isArray(questions) || questions.length === 0) {
+    console.log("❌ Invalid or empty questions array");
     return res.status(400).json({ error: 'Invalid questions data' });
   }
 
   try {
-    await Question.deleteMany({ testId }); // remove old
+    await Question.deleteMany({ testId });
     await Question.insertMany(questions.map(q => ({ ...q, testId })));
-
+    console.log("✅ Test saved successfully");
     res.json({ message: 'Test saved successfully' });
   } catch (err) {
     console.error('❌ Save error:', err);
     res.status(500).json({ error: 'Failed to save test' });
   }
 });
+
+
+
+
+
 
 // ✅ POST - Submit student response
 router.post('/test/:testId/submit', async (req, res) => {
@@ -68,6 +77,8 @@ router.post('/test/:testId/submit', async (req, res) => {
     res.status(500).json({ error: 'Failed to save response' });
   }
 });
+
+
 
 
 // ✅ GET responses for a test
