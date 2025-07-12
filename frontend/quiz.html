@@ -128,21 +128,22 @@
         container.innerHTML = ""; // Clear old questions
 
         questions.forEach((q, index) => {
-          const div = document.createElement("div");
-          div.className = "question";
+  const div = document.createElement("div");
+  let optionsHtml = "";
 
-          let optionsHtml = "";
-          Object.entries(q.options).forEach(([key, value]) => {
-            optionsHtml += `
-              <label>
-                <input type="radio" name="q${index}" value="${value}" />
-                ${key}. ${value}
-              </label>`;
-          });
+  q.options.forEach((option, i) => {
+    const optionLabel = String.fromCharCode(65 + i); // A, B, C, D
+    optionsHtml += `
+      <label>
+        <input type="radio" name="q${index}" value="${option}"> ${optionLabel}. ${option}
+      </label><br>
+    `;
+  });
 
-          div.innerHTML = `<h3>Q${index + 1}: ${q.question}</h3>${optionsHtml}`;
-          container.appendChild(div);
-        });
+  div.innerHTML = `<h3>Q${index + 1}: ${q.question}</h3>${optionsHtml}<br>`;
+  container.appendChild(div);
+});
+
 
         container.dataset.questions = JSON.stringify(questions);
         container.style.display = "block";
