@@ -183,6 +183,8 @@
         const result = await res.json();
         if (res.ok) {
           alert("✅ Quiz submitted successfully!");
+          window.location.href = "index.html";
+
         } else {
           alert("❌ Submission failed: " + result.error);
         }
