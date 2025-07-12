@@ -1,95 +1,49 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>View & Manage Test Questions</title>
+  <title>View & Edit Test</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 40px;
-      background: #f9f9f9;
-    }
-
-    #logoutBtn {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: #d9534f;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-
-    select, button {
-      padding: 8px 12px;
-      font-size: 16px;
-      margin: 8px 5px 16px 0;
-    }
-
-    .question-block {
+    body { font-family: Arial; padding: 30px; background: #f9f9f9; }
+    .question-box {
       background: #fff;
-      border: 1px solid #ccc;
-      margin-bottom: 16px;
-      padding: 16px;
+      padding: 15px;
+      margin-bottom: 15px;
       border-radius: 8px;
-      position: relative;
+      box-shadow: 0 0 5px #ccc;
     }
-
-    .question-block h4 {
-      margin-bottom: 8px;
-    }
-
-    .option {
-      margin-left: 16px;
-    }
-
-    .deleteBtn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background-color: #ff4d4d;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 4px 8px;
-      cursor: pointer;
-    }
-
-    .saveBtn {
-      background: green;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 10px 16px;
-      font-size: 16px;
-    }
+    input, textarea { width: 90%; margin: 5px 0; padding: 6px; }
+    button { margin: 10px 5px; padding: 8px 14px; font-size: 15px; }
+    select { padding: 6px; }
   </style>
 </head>
 <body>
 
-  <button id="logoutBtn" onclick="logout()">🚪 Logout</button>
+  <script>
+    if (sessionStorage.getItem("role") !== "admin") {
+      alert("Access denied. Login as admin.");
+      window.location.href = "index.html";
+    }
+  </script>
 
-  <h2>🧠 Manage Test Questions</h2>
+  <h2>📚 View & Edit Test Questions</h2>
 
-  <label for="testSelect">Select Test:</label>
-  <select id="testSelect"><option value="">Loading...</option></select>
-  <button onclick="loadQuestions()">📄 Load Questions</button>
+  <label>Select Test:</label>
+  <select id="testSelect"><option>Loading...</option></select>
+  <button onclick="loadTest()">🔄 Load Test</button>
 
-  <div id="questionsDisplay"></div>
+  <div id="questionsContainer"></div>
 
-  <button class="saveBtn" onclick="saveUpdatedTest()">💾 Save Updated Test</button>
+  <button onclick="addQuestion()">➕ Add Question</button>
+  <button onclick="saveTest()">💾 Save Updated Test</button>
+  <button onclick="window.location.href='admin.html'">🔙 Back to Admin</button>
 
   <script>
     const BASE_URL = "https://quiz-app-4087.onrender.com";
-    let currentQuestions = [];
 
-    function logout() {
-      sessionStorage.clear();
-      window.location.href = "index.html";
-    }
+    let currentTestId = "";
+    let questionCount = 0;
 
+    // Load test list
     window.onload = () => {
       fetch(`${BASE_URL}/tests`)
         .then(res => res.json())
@@ -103,89 +57,102 @@
             sel.appendChild(opt);
           });
         })
-        .catch(err => {
-          console.error(err);
-          alert("❌ Failed to load test list.");
-        });
+        .catch(err => alert("❌ Failed to load test list."));
     };
 
-    function loadQuestions() {
-      const testId = document.getElementById('testSelect').value;
-      const display = document.getElementById('questionsDisplay');
-      display.innerHTML = "";
-      currentQuestions = [];
-
+    function loadTest() {
+      const testId = document.getElementById("testSelect").value;
       if (!testId) return alert("Please select a test.");
+      currentTestId = testId;
 
       fetch(`${BASE_URL}/test/${testId}/questions`)
         .then(res => res.json())
         .then(questions => {
-          if (!questions.length) {
-            display.innerHTML = "<p>No questions found.</p>";
-            return;
-          }
-
-          currentQuestions = questions; // Store for deletion
-          renderQuestions();
+          const container = document.getElementById("questionsContainer");
+          container.innerHTML = "";
+          questionCount = 0;
+          questions.forEach(q => {
+            addQuestion(q);
+          });
         })
-        .catch(err => {
-          console.error(err);
-          alert("❌ Failed to load questions.");
+        .catch(() => alert("❌ Failed to load questions."));
+    }
+
+    function addQuestion(existing = null) {
+      questionCount++;
+      const container = document.getElementById("questionsContainer");
+
+      const div = document.createElement("div");
+      div.className = "question-box";
+
+      div.innerHTML = `
+        <h3>Question ${questionCount}</h3>
+        <textarea placeholder="Enter question text" class="questionText" rows="2">${existing?.question || ""}</textarea><br>
+        A: <input type="text" class="optionA" value="${existing?.options?.[0] || ""}"><br>
+        B: <input type="text" class="optionB" value="${existing?.options?.[1] || ""}"><br>
+        C: <input type="text" class="optionC" value="${existing?.options?.[2] || ""}"><br>
+        D: <input type="text" class="optionD" value="${existing?.options?.[3] || ""}"><br>
+        Correct Answer (A/B/C/D): <input type="text" class="correctAnswer" value="${getCorrectLetter(existing)}"><br>
+        <button onclick="this.parentElement.remove()">🗑 Delete</button>
+      `;
+
+      container.appendChild(div);
+    }
+
+    function getCorrectLetter(q) {
+      if (!q || !q.options || !q.correctAnswer) return "";
+      const index = q.options.indexOf(q.correctAnswer);
+      return ["A", "B", "C", "D"][index] || "";
+    }
+
+    async function saveTest() {
+      if (!currentTestId) return alert("No test selected.");
+
+      const texts = document.querySelectorAll(".questionText");
+      const as = document.querySelectorAll(".optionA");
+      const bs = document.querySelectorAll(".optionB");
+      const cs = document.querySelectorAll(".optionC");
+      const ds = document.querySelectorAll(".optionD");
+      const corrects = document.querySelectorAll(".correctAnswer");
+
+      const questions = [];
+
+      for (let i = 0; i < texts.length; i++) {
+        const opts = [as[i].value.trim(), bs[i].value.trim(), cs[i].value.trim(), ds[i].value.trim()];
+        const correct = corrects[i].value.trim().toUpperCase();
+        const correctIndex = { A: 0, B: 1, C: 2, D: 3 }[correct];
+
+        if (correctIndex === undefined) {
+          alert(`❌ Question ${i + 1} has invalid correct answer. Use A/B/C/D.`);
+          return;
+        }
+
+        questions.push({
+          question: texts[i].value.trim(),
+          options: opts,
+          correctAnswer: opts[correctIndex]
         });
-    }
-
-    function renderQuestions() {
-      const display = document.getElementById('questionsDisplay');
-      display.innerHTML = "";
-
-      currentQuestions.forEach((q, index) => {
-        const div = document.createElement("div");
-        div.className = "question-block";
-        div.innerHTML = `
-          <button class="deleteBtn" onclick="deleteQuestion(${index})">❌</button>
-          <h4>Q${index + 1}: ${q.question}</h4>
-          <p class="option">A. ${q.options[0]}</p>
-          <p class="option">B. ${q.options[1]}</p>
-          <p class="option">C. ${q.options[2]}</p>
-          <p class="option">D. ${q.options[3]}</p>
-          <p><strong>✅ Correct Answer:</strong> ${q.correctAnswer}</p>
-        `;
-        display.appendChild(div);
-      });
-    }
-
-    function deleteQuestion(index) {
-      if (confirm("Are you sure you want to delete this question?")) {
-        currentQuestions.splice(index, 1);
-        renderQuestions();
-      }
-    }
-
-    async function saveUpdatedTest() {
-      const testId = document.getElementById('testSelect').value;
-      if (!testId || currentQuestions.length === 0) {
-        return alert("Please select test and ensure there are questions to save.");
       }
 
       try {
-        const res = await fetch(`${BASE_URL}/test/${testId}/save`, {
+        const res = await fetch(`${BASE_URL}/test/${currentTestId}/save`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(currentQuestions)
+          body: JSON.stringify(questions)
         });
 
-        const result = await res.json();
+        const data = await res.json();
+
         if (res.ok) {
-          alert("✅ Updated test saved successfully!");
+          alert("✅ Test updated successfully.");
         } else {
-          alert("❌ Failed to save: " + result.error);
+          alert("❌ Failed to save: " + data.error);
         }
       } catch (err) {
+        alert("⚠️ Server error.");
         console.error(err);
-        alert("⚠️ Server error while saving.");
       }
     }
   </script>
-
 </body>
 </html>
