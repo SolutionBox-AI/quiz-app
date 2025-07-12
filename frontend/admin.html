@@ -1,156 +1,163 @@
-t <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Admin Panel - View Responses</title>
+  <title>Admin Dashboard - Quiz App</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 40px;
-      background-color: #f9f9f9;
+      background-color: #f8f9fa;
     }
+
     h2 {
-      color: #333;
+      color: #343a40;
     }
-    button {
-      padding: 10px 16px;
-      margin: 5px;
-      font-size: 14px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      background-color: #007bff;
-      color: white;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    select {
+
+    select, button {
       font-size: 16px;
-      padding: 8px;
+      padding: 6px 12px;
+      margin-right: 10px;
     }
-    pre {
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
       background: #fff;
-      padding: 20px;
-      max-height: 400px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-      border-radius: 5px;
+    }
+
+    th, td {
+      border: 1px solid #dee2e6;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #e9ecef;
+    }
+
+    #responseTable {
+      display: none;
     }
   </style>
 </head>
 <body>
 
   <script>
-    const role = localStorage.getItem("role");
-    if (role !== "admin") {
-      alert("Access denied. Login as admin.");
+    if (sessionStorage.getItem("role") !== "admin") {
+      alert("Access denied. Please login as admin.");
       window.location.href = "index.html";
     }
   </script>
 
-  <h2>📊 Admin Panel - View & Download Responses</h2>
+  <h2>📊 Admin Dashboard - View & Manage Responses</h2>
 
   <label for="testSelect">Select Test:</label>
   <select id="testSelect">
-    <option value="">-- Loading Tests --</option>
+    <option value="">--Loading Tests--</option>
   </select>
-  <br><br>
-  
-  <button onclick="window.location.href='view-tests.html'">🔍 View & Edit Tests</button>
+
   <button onclick="viewResponses()">👁 View Responses</button>
-  <button onclick="downloadCSV()">📥 Download Responses</button>
-  <button onclick="window.location.href='form.html'">📝 Create New Test</button>
-  <button onclick="window.location.href='scores.html'">📈 View Scores</button>
+  <button onclick="downloadJSON()">⬇️ Download JSON</button>
+  <button onclick="downloadCSV()">📥 Download CSV</button>
+  <button onclick="window.location.href='form.html'">📝 Create Test</button>
   <button onclick="logout()">🚪 Logout</button>
 
-  <pre id="responseOutput">No responses loaded yet.</pre>
+  <div id="responseTable"></div>
 
   <script>
     const BASE_URL = "https://quiz-app-4087.onrender.com";
+    let latestResponses = [];
 
+    // Load test list
     window.onload = () => {
-      fetch(`${BASE_URL}/tests`)
+      fetch(`${BASE_URL}/api/quiz/tests`)
         .then(res => res.json())
         .then(tests => {
-          const sel = document.getElementById("testSelect");
-          sel.innerHTML = '<option value="">-- Select Test --</option>';
-          tests.forEach(t => {
-            const opt = document.createElement('option');
-            opt.value = t;
-            opt.textContent = t;
-            sel.appendChild(opt);
+          const select = document.getElementById("testSelect");
+          select.innerHTML = '<option value="">--Select Test--</option>';
+          tests.forEach(test => {
+            const option = document.createElement("option");
+            option.value = test;
+            option.textContent = test;
+            select.appendChild(option);
           });
         })
         .catch(() => alert("❌ Failed to load tests."));
     };
 
     function viewResponses() {
-  const testId = document.getElementById('testSelect').value;
-  if (!testId) return alert("Please select a test.");
+      const testId = document.getElementById("testSelect").value;
+      if (!testId) return alert("Please select a test.");
 
-  fetch(`${BASE_URL}/test/${testId}/responses`)
-    .then(res => res.json())
-    .then(data => {
-      let output = "";
-      data.forEach((entry, i) => {
-        output += `👤 ${entry.name} (${entry.userCode || "No Code"})\n`;
-        entry.answers.forEach((ans, index) => {
-          output += `Q${index + 1}: ${ans.question}\n  👉 Selected: ${ans.selected}\n`;
+      fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`)
+        .then(res => res.json())
+        .then(data => {
+          latestResponses = data;
+          if (!data || data.length === 0) {
+            document.getElementById("responseTable").innerHTML = "<p>No responses available.</p>";
+            return;
+          }
+
+          let html = `<table>
+            <tr><th>#</th><th>Name</th><th>User Code</th><th>Submitted At</th><th>Answers</th></tr>`;
+          data.forEach((res, i) => {
+            const answers = res.answers.map(a => `<b>Q:</b> ${a.question}<br><b>A:</b> ${a.selected}`).join("<br><hr>");
+            html += `<tr>
+              <td>${i + 1}</td>
+              <td>${res.name || '-'}</td>
+              <td>${res.userCode || '-'}</td>
+              <td>${new Date(res.submittedAt).toLocaleString()}</td>
+              <td>${answers}</td>
+            </tr>`;
+          });
+          html += `</table>`;
+          document.getElementById("responseTable").innerHTML = html;
+          document.getElementById("responseTable").style.display = "block";
+        })
+        .catch(() => alert("❌ Failed to fetch responses."));
+    }
+
+    function downloadJSON() {
+      if (!latestResponses.length) return alert("No responses to download.");
+
+      const blob = new Blob([JSON.stringify(latestResponses, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "quiz-responses.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadCSV() {
+      if (!latestResponses.length) return alert("No responses to download.");
+
+      let csv = "Name,UserCode,Submitted At,Question,Selected Answer\n";
+      latestResponses.forEach(res => {
+        const name = res.name || "";
+        const code = res.userCode || "";
+        const time = new Date(res.submittedAt).toLocaleString();
+        res.answers.forEach(a => {
+          csv += `"${name}","${code}","${time}","${a.question.replace(/"/g, '""')}","${a.selected}"\n`;
         });
-        output += `📅 Submitted: ${new Date(entry.submittedAt).toLocaleString()}\n\n`;
       });
 
-      document.getElementById('responseOutput').textContent = output || "No responses found.";
-    })
-    .catch(err => {
-      console.error(err);
-      alert("❌ Failed to load responses.");
-    });
-}
-///////////////////////////////////////DOWNLOAD RESPONSE CSV////////////////////////////
-   
-async function downloadCSV() {
-  const testId = document.getElementById('testSelect').value;
-  if (!testId) return alert("Please select a test.");
-
-  let data = sessionStorage.getItem("latestResponses");
-  
-  if (!data) {
-    try {
-      const res = await fetch(`${BASE_URL}/test/${testId}/responses`);
-      data = JSON.stringify(await res.json());
-      sessionStorage.setItem("latestResponses", data);
-    } catch (err) {
-      return alert("❌ Failed to fetch responses.");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "quiz-responses.csv";
+      a.click();
+      URL.revokeObjectURL(url);
     }
-  }
 
-  const parsed = JSON.parse(data);
-  if (!parsed.length) return alert("No responses available.");
-
-  let csv = "Name,User Code,Question,Selected Answer,Submitted At\n";
-  parsed.forEach(entry => {
-    entry.answers.forEach(ans => {
-      csv += `"${entry.name}","${entry.userCode || ''}","${ans.question}","${ans.selected}","${new Date(entry.submittedAt).toLocaleString()}"\n`;
-    });
-  });
-
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${testId}-responses.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-///////////////////////////////////////LOGOUT FUNCTION////////////////////////////
     function logout() {
-      localStorage.clear();
+      sessionStorage.clear();
       window.location.href = "index.html";
     }
   </script>
+
 </body>
 </html>
