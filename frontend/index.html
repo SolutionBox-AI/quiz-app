@@ -2,57 +2,54 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Login - Quiz App</title>
+  <title>Admin - View Responses</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Inter', sans-serif;
       background: #f4f6f8;
       margin: 0;
-      padding: 0;
       color: #333;
     }
 
     .container {
-      max-width: 400px;
-      margin: 100px auto;
+      max-width: 960px;
+      margin: 40px auto;
       background: white;
-      padding: 40px 30px;
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 30px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
     }
 
     h2 {
-      text-align: center;
-      margin-bottom: 30px;
       color: #1e293b;
+      margin-bottom: 20px;
     }
 
     label {
-      display: block;
-      margin-top: 20px;
       font-weight: 600;
+      margin-bottom: 10px;
+      display: block;
     }
 
-    input {
-      width: 100%;
-      padding: 10px;
+    select {
       font-size: 16px;
-      margin-top: 8px;
-      border: 1px solid #ccc;
+      padding: 10px;
       border-radius: 8px;
-      box-sizing: border-box;
+      border: 1px solid #ccc;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 20px;
     }
 
     button {
-      margin-top: 30px;
-      width: 100%;
-      padding: 12px;
       background: #4f46e5;
       color: white;
-      font-size: 16px;
+      padding: 10px 18px;
       border: none;
       border-radius: 8px;
+      font-size: 16px;
+      margin: 8px 8px 8px 0;
       cursor: pointer;
     }
 
@@ -60,52 +57,119 @@
       background: #4338ca;
     }
 
-    #message {
+    a button {
+      background: #6b7280;
+    }
+
+    a button:hover {
+      background: #4b5563;
+    }
+
+    pre {
+      background: #f0f0f0;
+      padding: 20px;
+      border-radius: 10px;
+      max-height: 500px;
+      overflow-y: auto;
+      white-space: pre-wrap;
       margin-top: 20px;
-      color: red;
-      text-align: center;
-      font-weight: 500;
     }
   </style>
 </head>
 <body>
 
+  <script>
+    // Redirect if not admin
+    if (sessionStorage.getItem("role") !== "admin") {
+      alert("Access denied. Login as admin.");
+      window.location.href = "index.html";
+    }
+  </script>
+
   <div class="container">
-    <h2>🔐 Login - Quiz App</h2>
+    <h2>📊 Admin Panel - View & Download Responses</h2>
 
-    <label for="username">Username</label>
-    <input type="text" id="username" placeholder="Enter username" />
+    <label for="testSelect">Select Test:</label>
+    <select id="testSelect">
+      <option>Loading...</option>
+    </select>
 
-    <label for="password">Password</label>
-    <input type="password" id="password" placeholder="Enter password" />
+    <div>
+      <button onclick="viewResponses()">👁 View Responses</button>
+      <button onclick="downloadResponses()">📥 Download JSON</button>
+      <button onclick="window.location.href='form.html'">📝 Create New Test</button>
+      <button onclick="logout()">🚪 Logout</button>
+    </div>
 
-    <button onclick="login()">Login</button>
-
-    <p id="message"></p>
+    <pre id="responseOutput">No responses loaded yet.</pre>
   </div>
 
   <script>
+    const BASE_URL = "https://quiz-app-4087.onrender.com";
+
+    // Load available test IDs on page load
+    window.onload = () => {
+      fetch(`${BASE_URL}/tests`)
+        .then(res => res.json())
+        .then(tests => {
+          const sel = document.getElementById('testSelect');
+          sel.innerHTML = '<option value="">-- Select Test --</option>';
+          tests.forEach(testId => {
+            const opt = document.createElement('option');
+            opt.value = testId;
+            opt.textContent = testId;
+            sel.appendChild(opt);
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          alert("❌ Failed to load test list.");
+        });
+    };
+
+    // View student responses
+    function viewResponses() {
+      const testId = document.getElementById('testSelect').value;
+      if (!testId) return alert("Please select a test.");
+
+      fetch(`${BASE_URL}/test/${testId}/responses`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('responseOutput').textContent = JSON.stringify(data, null, 2);
+          sessionStorage.setItem("latestResponses", JSON.stringify(data));
+        })
+        .catch(err => {
+          console.error(err);
+          alert("❌ Failed to load responses.");
+        });
+    }
+
+    // Download as JSON
+    function downloadResponses() {
+      const testId = document.getElementById('testSelect').value;
+      const data = sessionStorage.getItem("latestResponses");
+
+      if (!testId) return alert("Please select a test.");
+      if (!data) return alert("No responses to download. Click 'View Responses' first.");
+
+      const blob = new Blob([data], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+
+      a.href = url;
+      a.download = `${testId}-responses.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Logout
     function logout() {
       sessionStorage.clear();
       window.location.href = "index.html";
     }
-
-    function login() {
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value.trim();
-      const message = document.getElementById("message");
-
-      if (username === "admin" && password === "admin123") {
-        sessionStorage.setItem("role", "admin");
-        window.location.href = "admin.html";
-      } else if (username === "student" && password === "student123") {
-        sessionStorage.setItem("role", "student");
-        window.location.href = "student.html";
-      } else {
-        message.textContent = "❌ Invalid credentials. Please try again.";
-      }
-    }
   </script>
-
 </body>
 </html>
+
