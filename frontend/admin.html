@@ -109,12 +109,28 @@ t <!DOCTYPE html>
     });
 }
 ///////////////////////////////////////DOWNLOAD RESPONSE CSV////////////////////////////
-    function downloadCSV() {
-  const data = JSON.parse(sessionStorage.getItem("latestResponses") || "[]");
-  if (!data.length) return alert("No responses available.");
+   
+async function downloadCSV() {
+  const testId = document.getElementById('testSelect').value;
+  if (!testId) return alert("Please select a test.");
+
+  let data = sessionStorage.getItem("latestResponses");
+  
+  if (!data) {
+    try {
+      const res = await fetch(`${BASE_URL}/test/${testId}/responses`);
+      data = JSON.stringify(await res.json());
+      sessionStorage.setItem("latestResponses", data);
+    } catch (err) {
+      return alert("❌ Failed to fetch responses.");
+    }
+  }
+
+  const parsed = JSON.parse(data);
+  if (!parsed.length) return alert("No responses available.");
 
   let csv = "Name,User Code,Question,Selected Answer,Submitted At\n";
-  data.forEach(entry => {
+  parsed.forEach(entry => {
     entry.answers.forEach(ans => {
       csv += `"${entry.name}","${entry.userCode || ''}","${ans.question}","${ans.selected}","${new Date(entry.submittedAt).toLocaleString()}"\n`;
     });
@@ -122,30 +138,15 @@ t <!DOCTYPE html>
 
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement("a");
   a.href = url;
-  a.download = `quiz-responses.csv`;
+  a.download = `${testId}-responses.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-    function downloadResponses() {
-      const data = localStorage.getItem("latestResponses");
-      const testId = document.getElementById("testSelect").value;
-      if (!data) return alert("Nothing to download.");
-      const blob = new Blob([data], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${testId}-responses.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
+///////////////////////////////////////LOGOUT FUNCTION////////////////////////////
     function logout() {
       localStorage.clear();
       window.location.href = "index.html";
