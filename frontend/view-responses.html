@@ -1,97 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>View Responses</title>
+  <meta charset="UTF-8"/>
+  <title>View & Filter Responses</title>
   <style>
-    body { font-family: Arial; padding: 30px; background: #f4f6f8; }
-    h2 { margin-bottom: 20px; }
-    select, button { padding: 8px 12px; font-size: 16px; margin-right: 10px; }
+    body { font-family: Arial; margin: 40px; background: #f4f6f9; }
+    select, input, button { padding: 8px; margin: 5px; font-size: 16px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #f0f0f0; }
+    th { background: #e9ecef; }
+    tr:nth-child(even) { background: #fafafa; }
   </style>
 </head>
 <body>
   <script>
     if (sessionStorage.getItem("role") !== "admin") {
-      alert("Access denied. Please login as admin.");
-      window.location.href = "index.html";
+      alert("Access denied."); location.href = "index.html";
     }
   </script>
 
-  <h2>📋 View & Download Quiz Responses</h2>
+  <h2>📋 View & Filter Responses</h2>
 
   <label>Select Test:</label>
-  <select id="testSelect"><option>Loading tests...</option></select>
-  <button onclick="viewResponses()">👁 View</button>
-  <button onclick="downloadResponses()">📥 Download JSON</button>
-  <button onclick="location.href='admin.html'">🏠 Back to Admin</button>
+  <select id="testSelect"><option>Loading...</option></select>
+
+  <label>Filter by User Code (optional):</label>
+  <input type="text" id="userCodeInput" placeholder="e.g. STU123"/>
+
+  <button onclick="loadResponses()">🔍 View Responses</button>
+  <button onclick="downloadJSON()">📥 Download JSON</button>
+  <button onclick="location.href='admin.html'">🏠 Back to Dashboard</button>
 
   <div id="tableContainer"></div>
 
   <script>
     const BASE = "https://quiz-app-4087.onrender.com/api/quiz";
+    let responses = [];
 
     window.onload = () => {
       fetch(`${BASE}/tests`)
         .then(r => r.json())
         .then(tests => {
-          const sel = document.getElementById('testSelect');
+          const sel = document.getElementById("testSelect");
           sel.innerHTML = '<option value="">-- Select Test --</option>';
           tests.forEach(t => sel.appendChild(new Option(t, t)));
         })
-        .catch(err => alert("❌ Failed to load test list."));
+        .catch(() => alert("❌ Could not load tests."));
     };
 
-    let lastData = [];
-
-    function viewResponses() {
+    async function loadResponses() {
       const testId = document.getElementById("testSelect").value;
-      if (!testId) return alert("Please select a test.");
+      if (!testId) return alert("Select a test first.");
+      const userCode = document.getElementById("userCodeInput").value.trim();
+      let url = `${BASE}/test/${testId}/responses`;
+      if (userCode) url += `?userCode=${encodeURIComponent(userCode)}`;
 
-      fetch(`${BASE}/test/${testId}/responses`)
-        .then(r => r.json())
-        .then(data => {
-          lastData = data;
-          renderTable(data);
-        })
-        .catch(err => alert("❌ Failed to load responses."));
+      const res = await fetch(url);
+      responses = await res.json();
+      renderTable(responses);
     }
 
     function renderTable(data) {
-      if (!data.length) return document.getElementById("tableContainer").innerHTML = "<p>No responses available.</p>";
+      const div = document.getElementById("tableContainer");
+      if (data.length === 0) {
+        div.innerHTML = "<p>No responses found.</p>";
+        return;
+      }
 
-      const headers = `
-        <tr>
-          <th>#</th>
-          <th>User Code</th>
-          <th>Name</th>
-          <th>Submitted</th>
-          <th>Answers</th>
-        </tr>
-      `;
-      const rows = data.map((r, i) => `
-        <tr>
+      let html = `<table><thead><tr>
+        <th>#</th><th>User Code</th><th>Name</th><th>Submitted</th><th>Answers</th>
+      </tr></thead><tbody>`;
+
+      data.forEach((r, i) => {
+        const answers = r.answers.map(a => `${a.question}: <b>${a.selected}</b>`).join("<br>");
+        html += `<tr>
           <td>${i + 1}</td>
-          <td>${r.userCode || '-'}</td>
+          <td>${r.userCode}</td>
           <td>${r.name}</td>
           <td>${new Date(r.submittedAt).toLocaleString()}</td>
-          <td>${r.answers.map(a => `${a.question}: <strong>${a.selected || '–'}</strong>`).join("<br>")}</td>
-        </tr>
-      `).join("");
+          <td>${answers}</td>
+        </tr>`;
+      });
 
-      document.getElementById("tableContainer").innerHTML = `
-        <table>
-          <thead>${headers}</thead>
-          <tbody>${rows}</tbody>
-        </table>
-      `;
+      html += "</tbody></table>";
+      div.innerHTML = html;
     }
 
-    function downloadResponses() {
-      if (!lastData.length) return alert("❌ No data to download.");
-      const blob = new Blob([JSON.stringify(lastData, null, 2)], { type: "application/json" });
+    function downloadJSON() {
+      if (!responses.length) return alert("No responses to download.");
+      const blob = new Blob([JSON.stringify(responses, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `${document.getElementById("testSelect").value}-responses.json`;
