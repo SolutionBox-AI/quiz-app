@@ -1,23 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
   <title>Admin Dashboard - Quiz App</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 40px;
-      background: #f9f9f9;
-    }
-    h2 {
+      background-color: #f4f6f8;
+      padding: 40px;
       color: #333;
     }
-    select, button {
-      font-size: 16px;
-      padding: 10px;
-      margin: 10px 5px;
+    h1 {
+      color: #444;
     }
     .button-group {
-      margin-top: 20px;
+      margin-top: 30px;
+    }
+    button {
+      padding: 12px 24px;
+      margin: 10px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
     }
   </style>
 </head>
@@ -25,79 +35,26 @@
 
 <script>
   if (sessionStorage.getItem("role") !== "admin") {
-    alert("Access denied. Login as admin.");
+    alert("Access denied. Please login as admin.");
     window.location.href = "index.html";
   }
 </script>
 
-<h2>🛠 Admin Dashboard</h2>
-
-<label for="testSelect">Select a Test:</label>
-<select id="testSelect"><option>Loading...</option></select>
+<h1>🛠 Admin Dashboard</h1>
+<p>Welcome to your control panel. Choose an action below:</p>
 
 <div class="button-group">
-  <button onclick="goTo('view-responses.html')">👁 View Responses</button>
-  <button onclick="goTo('scores.html')">📊 View Scores</button>
-  <button onclick="goTo('form.html')">📝 Create/Edit Test</button>
-  <button onclick="downloadJSON()">📥 Download Data</button>
+  <button onclick="location.href='form.html'">📝 Create / Edit Test</button>
+  <button onclick="location.href='view-responses.html'">👁 View Responses</button>
+  <button onclick="location.href='scores.html'">📊 View Scores</button>
   <button onclick="logout()">🚪 Logout</button>
 </div>
 
 <script>
-  const BASE_URL = "https://quiz-app-4087.onrender.com";
-
-  function goTo(page) {
-    const testId = document.getElementById("testSelect").value;
-    if (!testId) return alert("Please select a test.");
-    sessionStorage.setItem("selectedTest", testId);
-    window.location.href = page;
-  }
-
   function logout() {
     sessionStorage.clear();
     window.location.href = "index.html";
   }
-
-  async function downloadJSON() {
-    const testId = document.getElementById("testSelect").value;
-    if (!testId) return alert("Please select a test.");
-
-    try {
-      const res = await fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`);
-      const data = await res.json();
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = `${testId}-responses.json`;
-      link.click();
-    } catch (err) {
-      alert("❌ Failed to download data.");
-      console.error(err);
-    }
-  }
-
-  // Load tests
-  window.onload = () => {
-    fetch(`${BASE_URL}/api/quiz/tests`)
-      .then(res => res.json())
-      .then(tests => {
-        const select = document.getElementById("testSelect");
-        select.innerHTML = '<option value="">-- Select Test --</option>';
-        tests.forEach(t => {
-          const opt = document.createElement("option");
-          opt.value = t;
-          opt.textContent = t;
-          select.appendChild(opt);
-        });
-
-        const previouslySelected = sessionStorage.getItem("selectedTest");
-        if (previouslySelected) select.value = previouslySelected;
-      })
-      .catch(err => {
-        console.error(err);
-        alert("❌ Failed to load test list.");
-      });
-  };
 </script>
 
 </body>
