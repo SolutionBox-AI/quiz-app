@@ -1,163 +1,104 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
   <title>Admin Dashboard - Quiz App</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 40px;
-      background-color: #f8f9fa;
+      background: #f9f9f9;
     }
-
     h2 {
-      color: #343a40;
+      color: #333;
     }
-
     select, button {
       font-size: 16px;
-      padding: 6px 12px;
-      margin-right: 10px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      background: #fff;
-    }
-
-    th, td {
-      border: 1px solid #dee2e6;
       padding: 10px;
-      text-align: left;
+      margin: 10px 5px;
     }
-
-    th {
-      background-color: #e9ecef;
-    }
-
-    #responseTable {
-      display: none;
+    .button-group {
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
 
-  <script>
-    if (sessionStorage.getItem("role") !== "admin") {
-      alert("Access denied. Please login as admin.");
-      window.location.href = "index.html";
-    }
-  </script>
+<script>
+  if (sessionStorage.getItem("role") !== "admin") {
+    alert("Access denied. Login as admin.");
+    window.location.href = "index.html";
+  }
+</script>
 
-  <h2>📊 Admin Dashboard - View & Manage Responses</h2>
+<h2>🛠 Admin Dashboard</h2>
 
-  <label for="testSelect">Select Test:</label>
-  <select id="testSelect">
-    <option value="">--Loading Tests--</option>
-  </select>
+<label for="testSelect">Select a Test:</label>
+<select id="testSelect"><option>Loading...</option></select>
 
-  <button onclick="viewResponses()">👁 View Responses</button>
-  <button onclick="downloadJSON()">⬇️ Download JSON</button>
-  <button onclick="downloadCSV()">📥 Download CSV</button>
-  <button onclick="window.location.href='form.html'">📝 Create Test</button>
+<div class="button-group">
+  <button onclick="goTo('view-responses.html')">👁 View Responses</button>
+  <button onclick="goTo('scores.html')">📊 View Scores</button>
+  <button onclick="goTo('form.html')">📝 Create/Edit Test</button>
+  <button onclick="downloadJSON()">📥 Download Data</button>
   <button onclick="logout()">🚪 Logout</button>
+</div>
 
-  <div id="responseTable"></div>
+<script>
+  const BASE_URL = "https://quiz-app-4087.onrender.com";
 
-  <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com";
-    let latestResponses = [];
+  function goTo(page) {
+    const testId = document.getElementById("testSelect").value;
+    if (!testId) return alert("Please select a test.");
+    sessionStorage.setItem("selectedTest", testId);
+    window.location.href = page;
+  }
 
-    // Load test list
-    window.onload = () => {
-      fetch(`${BASE_URL}/tests`)
-        .then(res => res.json())
-        .then(tests => {
-          const select = document.getElementById("testSelect");
-          select.innerHTML = '<option value="">--Select Test--</option>';
-          tests.forEach(test => {
-            const option = document.createElement("option");
-            option.value = test;
-            option.textContent = test;
-            select.appendChild(option);
-          });
-        })
-        .catch(() => alert("❌ Failed to load tests."));
-    };
+  function logout() {
+    sessionStorage.clear();
+    window.location.href = "index.html";
+  }
 
-    function viewResponses() {
-      const testId = document.getElementById("testSelect").value;
-      if (!testId) return alert("Please select a test.");
+  async function downloadJSON() {
+    const testId = document.getElementById("testSelect").value;
+    if (!testId) return alert("Please select a test.");
 
-      fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`)
-        .then(res => res.json())
-        .then(data => {
-          latestResponses = data;
-          if (!data || data.length === 0) {
-            document.getElementById("responseTable").innerHTML = "<p>No responses available.</p>";
-            return;
-          }
-
-          let html = `<table>
-            <tr><th>#</th><th>Name</th><th>User Code</th><th>Submitted At</th><th>Answers</th></tr>`;
-          data.forEach((res, i) => {
-            const answers = res.answers.map(a => `<b>Q:</b> ${a.question}<br><b>A:</b> ${a.selected}`).join("<br><hr>");
-            html += `<tr>
-              <td>${i + 1}</td>
-              <td>${res.name || '-'}</td>
-              <td>${res.userCode || '-'}</td>
-              <td>${new Date(res.submittedAt).toLocaleString()}</td>
-              <td>${answers}</td>
-            </tr>`;
-          });
-          html += `</table>`;
-          document.getElementById("responseTable").innerHTML = html;
-          document.getElementById("responseTable").style.display = "block";
-        })
-        .catch(() => alert("❌ Failed to fetch responses."));
+    try {
+      const res = await fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`);
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${testId}-responses.json`;
+      link.click();
+    } catch (err) {
+      alert("❌ Failed to download data.");
+      console.error(err);
     }
+  }
 
-    function downloadJSON() {
-      if (!latestResponses.length) return alert("No responses to download.");
-
-      const blob = new Blob([JSON.stringify(latestResponses, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "quiz-responses.json";
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function downloadCSV() {
-      if (!latestResponses.length) return alert("No responses to download.");
-
-      let csv = "Name,UserCode,Submitted At,Question,Selected Answer\n";
-      latestResponses.forEach(res => {
-        const name = res.name || "";
-        const code = res.userCode || "";
-        const time = new Date(res.submittedAt).toLocaleString();
-        res.answers.forEach(a => {
-          csv += `"${name}","${code}","${time}","${a.question.replace(/"/g, '""')}","${a.selected}"\n`;
+  // Load tests
+  window.onload = () => {
+    fetch(`${BASE_URL}/api/quiz/tests`)
+      .then(res => res.json())
+      .then(tests => {
+        const select = document.getElementById("testSelect");
+        select.innerHTML = '<option value="">-- Select Test --</option>';
+        tests.forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = t;
+          opt.textContent = t;
+          select.appendChild(opt);
         });
+
+        const previouslySelected = sessionStorage.getItem("selectedTest");
+        if (previouslySelected) select.value = previouslySelected;
+      })
+      .catch(err => {
+        console.error(err);
+        alert("❌ Failed to load test list.");
       });
-
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "quiz-responses.csv";
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function logout() {
-      sessionStorage.clear();
-      window.location.href = "index.html";
-    }
-  </script>
+  };
+</script>
 
 </body>
 </html>
