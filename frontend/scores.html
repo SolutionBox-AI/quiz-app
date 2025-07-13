@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>View Scores</title>
+  <title>View Student Scores</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial; margin: 40px; }
@@ -16,6 +16,11 @@
     }
     select, button, input {
       padding: 8px 12px; font-size: 16px; margin-right: 10px;
+    }
+    #studentList {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #333;
     }
   </style>
 </head>
@@ -42,6 +47,8 @@
   <button onclick="downloadExcel()">📄 Download Excel</button>
   <button onclick="goBack()">🔙 Back to Admin</button>
 
+  <div id="studentList"></div>
+
   <table id="scoreTable" style="display:none;">
     <thead>
       <tr>
@@ -55,6 +62,7 @@
 
   <script>
     const BASE_URL = "https://quiz-app-4087.onrender.com";
+    let currentScores = [];
 
     window.onload = () => {
       fetch(`${BASE_URL}/api/quiz/tests`)
@@ -87,9 +95,12 @@
 
         const questions = await resQ.json();
         const responses = await resR.json();
+        currentScores = [];
 
         const tbody = document.querySelector("#scoreTable tbody");
         tbody.innerHTML = "";
+
+        const uniqueStudents = new Set();
 
         responses.forEach(resp => {
           let correct = 0;
@@ -102,31 +113,48 @@
             ? ((correct / questions.length) * 100).toFixed(2)
             : "N/A";
 
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${resp.name || "-"}</td>
-            <td>${resp.userCode || "-"}</td>
-            <td>${scorePercent}</td>
-          `;
-          tbody.appendChild(row);
+          currentScores.push({
+            name: resp.name || "-",
+            code: resp.userCode || "-",
+            score: scorePercent
+          });
+
+          uniqueStudents.add(`${resp.name || "-"} - ${resp.userCode || "-"}`);
         });
 
-        document.getElementById("scoreTable").style.display = "table";
+        document.getElementById("studentList").textContent =
+          "🧑‍🎓 Students who attempted: " + Array.from(uniqueStudents).join(", ");
+
+        renderScores(currentScores);
       } catch (err) {
         console.error(err);
         alert("❌ Failed to load scores.");
       }
     }
 
-    function filterTable() {
+    function renderScores(data) {
       const filter = document.getElementById("studentFilter").value.toLowerCase();
-      const rows = document.querySelectorAll("#scoreTable tbody tr");
+      const tbody = document.querySelector("#scoreTable tbody");
+      tbody.innerHTML = "";
 
-      rows.forEach(row => {
-        const name = row.cells[0].textContent.toLowerCase();
-        const code = row.cells[1].textContent.toLowerCase();
-        row.style.display = (name.includes(filter) || code.includes(filter)) ? "" : "none";
+      data.filter(row =>
+        row.name.toLowerCase().includes(filter) ||
+        row.code.toLowerCase().includes(filter)
+      ).forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.name}</td>
+          <td>${row.code}</td>
+          <td>${row.score}</td>
+        `;
+        tbody.appendChild(tr);
       });
+
+      document.getElementById("scoreTable").style.display = "table";
+    }
+
+    function filterTable() {
+      renderScores(currentScores);
     }
 
     function downloadExcel() {
