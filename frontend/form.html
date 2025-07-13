@@ -33,6 +33,8 @@
       document.getElementById("title").textContent = `Edit Test: ${currentTestId}`;
       document.getElementById("testIdInput").value = currentTestId;
       renderQuestions(questions);
+       <button onclick="addNewQuestion()">➕ Add Question</button>
+       <button onclick="saveTest()">💾 Save Test</button>
     }
 
     function clearForm() {
@@ -147,8 +149,8 @@
 
   <div id="questionsContainer"></div>
 
-  <button onclick="addNewQuestion()">➕ Add Question</button>
-  <button onclick="saveTest()">💾 Save Test</button>
+//  <button onclick="addNewQuestion()">➕ Add Question</button>
+//  <button onclick="saveTest()">💾 Save Test</button>
   <button onclick="window.location.href='admin.html'">🔙 Back to Admin</button>
 </body>
 </html>
