@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>View Responses</title>
+  <title>View Student Responses</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial; margin: 40px; }
@@ -14,12 +14,18 @@
     th {
       background-color: #f2f2f2;
     }
-    select, button {
+    select, button, input {
       padding: 8px 12px; font-size: 16px; margin-right: 10px;
+    }
+    #studentList {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #333;
     }
   </style>
 </head>
 <body>
+
   <script>
     if (sessionStorage.getItem("role") !== "admin") {
       alert("Access denied. Please login as admin.");
@@ -35,11 +41,13 @@
   </select>
 
   <label for="studentFilter">Filter by Student Name/User Code:</label>
-  <input type="text" id="studentFilter" placeholder="Type to filter..." oninput="filterTable()" />
+  <input type="text" id="studentFilter" oninput="filterResponses()" placeholder="Start typing..." />
 
   <button onclick="fetchResponses()">👁 View Responses</button>
   <button onclick="downloadExcel()">📄 Download Excel</button>
   <button onclick="goBack()">🔙 Back to Admin</button>
+
+  <div id="studentList"></div>
 
   <table id="responseTable" style="display:none;">
     <thead>
@@ -72,51 +80,67 @@
         })
         .catch(err => {
           console.error(err);
-          alert("Failed to load test list.");
+          alert("❌ Failed to load test list.");
         });
     };
 
-    function fetchResponses() {
+    let currentResponses = [];
+
+    async function fetchResponses() {
       const testId = document.getElementById("testSelect").value;
       if (!testId) return alert("Please select a test.");
 
-      fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`)
-        .then(res => res.json())
-        .then(data => {
-          const tbody = document.querySelector("#responseTable tbody");
-          tbody.innerHTML = "";
-
-          data.forEach(resp => {
-            resp.answers.forEach(ans => {
-              const row = document.createElement("tr");
-              row.innerHTML = `
-                <td>${resp.name || "-"}</td>
-                <td>${resp.userCode || "-"}</td>
-                <td>${ans.question}</td>
-                <td>${ans.selected || "-"}</td>
-                <td>${new Date(resp.submittedAt).toLocaleString()}</td>
-              `;
-              tbody.appendChild(row);
-            });
-          });
-
-          document.getElementById("responseTable").style.display = "table";
-        })
-        .catch(err => {
-          console.error(err);
-          alert("❌ Failed to load responses.");
-        });
+      try {
+        const res = await fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`);
+        const data = await res.json();
+        currentResponses = data;
+        showStudentList(data);
+        renderResponses(data);
+      } catch (err) {
+        console.error(err);
+        alert("❌ Failed to load responses.");
+      }
     }
 
-    function filterTable() {
-      const filter = document.getElementById("studentFilter").value.toLowerCase();
-      const rows = document.querySelectorAll("#responseTable tbody tr");
+    function showStudentList(data) {
+      const uniqueNames = Array.from(
+        new Set(data.map(r => `${r.name || "-"} - ${r.userCode || "-"}`))
+      );
+      const list = uniqueNames.join(", ");
+      document.getElementById("studentList").textContent =
+        "🧑‍🎓 Students who attempted: " + list;
+    }
 
-      rows.forEach(row => {
-        const name = row.cells[0].textContent.toLowerCase();
-        const code = row.cells[1].textContent.toLowerCase();
-        row.style.display = (name.includes(filter) || code.includes(filter)) ? "" : "none";
+    function renderResponses(data) {
+      const tbody = document.querySelector("#responseTable tbody");
+      tbody.innerHTML = "";
+
+      const filter = document.getElementById("studentFilter").value.toLowerCase();
+
+      const filtered = data.filter(r =>
+        (r.name || "").toLowerCase().includes(filter) ||
+        (r.userCode || "").toLowerCase().includes(filter)
+      );
+
+      filtered.forEach(resp => {
+        resp.answers.forEach(ans => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${resp.name || "-"}</td>
+            <td>${resp.userCode || "-"}</td>
+            <td>${ans.question}</td>
+            <td>${ans.selected}</td>
+            <td>${new Date(resp.submittedAt).toLocaleString()}</td>
+          `;
+          tbody.appendChild(row);
+        });
       });
+
+      document.getElementById("responseTable").style.display = "table";
+    }
+
+    function filterResponses() {
+      renderResponses(currentResponses);
     }
 
     function downloadExcel() {
@@ -130,5 +154,6 @@
       window.location.href = "admin.html";
     }
   </script>
+
 </body>
 </html>
