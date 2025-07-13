@@ -63,7 +63,7 @@
 
     // Load test list
     window.onload = () => {
-      fetch(`${BASE_URL}/api/quiz/tests`)
+      fetch(`${BASE_URL}/tests`)
         .then(res => res.json())
         .then(tests => {
           const sel = document.getElementById("testSelect");
