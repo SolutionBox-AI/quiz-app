@@ -1,98 +1,133 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8"/>
-  <title>View & Filter Responses</title>
+  <title>View Responses</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
-    body { font-family: Arial; margin: 40px; background: #f4f6f9; }
-    select, input, button { padding: 8px; margin: 5px; font-size: 16px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #e9ecef; }
-    tr:nth-child(even) { background: #fafafa; }
+    body { font-family: Arial; margin: 40px; }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 20px;
+    }
+    th, td {
+      padding: 10px; border: 1px solid #ccc; text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    select, button {
+      padding: 8px 12px; font-size: 16px; margin-right: 10px;
+    }
   </style>
 </head>
 <body>
   <script>
     if (sessionStorage.getItem("role") !== "admin") {
-      alert("Access denied."); location.href = "index.html";
+      alert("Access denied. Please login as admin.");
+      window.location.href = "index.html";
     }
   </script>
 
-  <h2>📋 View & Filter Responses</h2>
+  <h2>📊 View Student Responses</h2>
 
-  <label>Select Test:</label>
-  <select id="testSelect"><option>Loading...</option></select>
+  <label for="testSelect">Select Test:</label>
+  <select id="testSelect">
+    <option value="">--Loading Tests--</option>
+  </select>
 
-  <label>Filter by User Code (optional):</label>
-  <input type="text" id="userCodeInput" placeholder="e.g. STU123"/>
+  <label for="studentFilter">Filter by Student Name/User Code:</label>
+  <input type="text" id="studentFilter" placeholder="Type to filter..." oninput="filterTable()" />
 
-  <button onclick="loadResponses()">🔍 View Responses</button>
-  <button onclick="downloadJSON()">📥 Download JSON</button>
-  <button onclick="location.href='admin.html'">🏠 Back to Dashboard</button>
+  <button onclick="fetchResponses()">👁 View Responses</button>
+  <button onclick="downloadExcel()">📄 Download Excel</button>
+  <button onclick="goBack()">🔙 Back to Admin</button>
 
-  <div id="tableContainer"></div>
+  <table id="responseTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>User Code</th>
+        <th>Question</th>
+        <th>Answer</th>
+        <th>Submitted At</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
   <script>
-    const BASE = "https://quiz-app-4087.onrender.com/api/quiz";
-    let responses = [];
+    const BASE_URL = "https://quiz-app-4087.onrender.com";
 
     window.onload = () => {
-      fetch(`${BASE}/tests`)
-        .then(r => r.json())
+      fetch(`${BASE_URL}/api/quiz/tests`)
+        .then(res => res.json())
         .then(tests => {
-          const sel = document.getElementById("testSelect");
-          sel.innerHTML = '<option value="">-- Select Test --</option>';
-          tests.forEach(t => sel.appendChild(new Option(t, t)));
+          const select = document.getElementById("testSelect");
+          select.innerHTML = '<option value="">--Select Test--</option>';
+          tests.forEach(test => {
+            const opt = document.createElement("option");
+            opt.value = test;
+            opt.textContent = test;
+            select.appendChild(opt);
+          });
         })
-        .catch(() => alert("❌ Could not load tests."));
+        .catch(err => {
+          console.error(err);
+          alert("Failed to load test list.");
+        });
     };
 
-    async function loadResponses() {
+    function fetchResponses() {
       const testId = document.getElementById("testSelect").value;
-      if (!testId) return alert("Select a test first.");
-      const userCode = document.getElementById("userCodeInput").value.trim();
-      let url = `${BASE}/test/${testId}/responses`;
-      if (userCode) url += `?userCode=${encodeURIComponent(userCode)}`;
+      if (!testId) return alert("Please select a test.");
 
-      const res = await fetch(url);
-      responses = await res.json();
-      renderTable(responses);
+      fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`)
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.querySelector("#responseTable tbody");
+          tbody.innerHTML = "";
+
+          data.forEach(resp => {
+            resp.answers.forEach(ans => {
+              const row = document.createElement("tr");
+              row.innerHTML = `
+                <td>${resp.name || "-"}</td>
+                <td>${resp.userCode || "-"}</td>
+                <td>${ans.question}</td>
+                <td>${ans.selected || "-"}</td>
+                <td>${new Date(resp.submittedAt).toLocaleString()}</td>
+              `;
+              tbody.appendChild(row);
+            });
+          });
+
+          document.getElementById("responseTable").style.display = "table";
+        })
+        .catch(err => {
+          console.error(err);
+          alert("❌ Failed to load responses.");
+        });
     }
 
-    function renderTable(data) {
-      const div = document.getElementById("tableContainer");
-      if (data.length === 0) {
-        div.innerHTML = "<p>No responses found.</p>";
-        return;
-      }
+    function filterTable() {
+      const filter = document.getElementById("studentFilter").value.toLowerCase();
+      const rows = document.querySelectorAll("#responseTable tbody tr");
 
-      let html = `<table><thead><tr>
-        <th>#</th><th>User Code</th><th>Name</th><th>Submitted</th><th>Answers</th>
-      </tr></thead><tbody>`;
-
-      data.forEach((r, i) => {
-        const answers = r.answers.map(a => `${a.question}: <b>${a.selected}</b>`).join("<br>");
-        html += `<tr>
-          <td>${i + 1}</td>
-          <td>${r.userCode}</td>
-          <td>${r.name}</td>
-          <td>${new Date(r.submittedAt).toLocaleString()}</td>
-          <td>${answers}</td>
-        </tr>`;
+      rows.forEach(row => {
+        const name = row.cells[0].textContent.toLowerCase();
+        const code = row.cells[1].textContent.toLowerCase();
+        row.style.display = (name.includes(filter) || code.includes(filter)) ? "" : "none";
       });
-
-      html += "</tbody></table>";
-      div.innerHTML = html;
     }
 
-    function downloadJSON() {
-      if (!responses.length) return alert("No responses to download.");
-      const blob = new Blob([JSON.stringify(responses, null, 2)], { type: "application/json" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `${document.getElementById("testSelect").value}-responses.json`;
-      a.click();
+    function downloadExcel() {
+      const table = document.getElementById("responseTable");
+      if (table.style.display === "none") return alert("No responses to download.");
+      const wb = XLSX.utils.table_to_book(table, { sheet: "Responses" });
+      XLSX.writeFile(wb, "quiz-responses.xlsx");
+    }
+
+    function goBack() {
+      window.location.href = "admin.html";
     }
   </script>
 </body>
