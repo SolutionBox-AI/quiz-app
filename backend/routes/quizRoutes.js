@@ -1,5 +1,7 @@
+// backend/routes/quizRoutes.js
 const express = require("express");
 const router = express.Router();
+
 const Question = require("../models/Question");
 const Response = require("../models/Response");
 
@@ -23,11 +25,10 @@ router.get("/test/:testId/questions", async (req, res) => {
   }
 });
 
-// ✅ Save or update test questions (admin)
+// ✅ POST: Save a test (admin)
 router.post("/test/:testId/save", async (req, res) => {
   const testId = req.params.testId;
-  const raw = req.body;
-  const questions = Array.isArray(raw) ? raw : raw.questions;
+  const questions = Array.isArray(req.body) ? req.body : req.body.questions;
 
   if (!Array.isArray(questions) || questions.length === 0) {
     return res.status(400).json({ error: "Invalid questions data" });
@@ -42,29 +43,24 @@ router.post("/test/:testId/save", async (req, res) => {
   }
 });
 
-// ✅ Submit a student's response
+// ✅ POST: Submit student quiz
 router.post("/test/:testId/submit", async (req, res) => {
   const { testId } = req.params;
   const { name, userCode, answers } = req.body;
 
   if (!name || !userCode || !Array.isArray(answers)) {
-    return res.status(400).json({ error: "Invalid data" });
+    return res.status(400).json({ error: "Invalid submission data" });
   }
 
   try {
-    const existing = await Response.findOne({ testId, userCode });
-    if (existing) {
-      return res.status(400).json({ error: "You have already submitted this test." });
-    }
-
     const saved = await Response.create({ testId, name, userCode, answers });
-    res.status(200).json({ message: "Response saved", data: saved });
+    res.json({ message: "Response saved", data: saved });
   } catch (err) {
     res.status(500).json({ error: "Failed to save response" });
   }
 });
 
-// ✅ Get all responses for a test (admin)
+// ✅ GET: Admin responses
 router.get("/test/:testId/responses", async (req, res) => {
   try {
     const responses = await Response.find({ testId: req.params.testId });
