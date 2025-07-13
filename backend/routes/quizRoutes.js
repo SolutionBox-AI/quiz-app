@@ -1,70 +1,63 @@
-// backend/routes/quizRoutes.js
 const express = require("express");
 const router = express.Router();
+const User = require("../models/User");
 
-const Question = require("../models/Question");
-const Response = require("../models/Response");
+// Register a new user (admin or student)
+router.post("/register", async (req, res) => {
+  const { name, email, password, role, adminId } = req.body;
 
-// GET all test IDs
-router.get("/tests", async (req, res) => {
+  if (!name || !email || !password || !role) {
+    return res.status(400).json({ error: "All fields are required." });
+  }
+
   try {
-    const testIds = await Question.distinct("testId");
-    res.json(testIds);
+    const existing = await User.findOne({ email });
+    if (existing) return res.status(400).json({ error: "Email already registered." });
+
+    const newUser = new User({ name, email, password, role });
+
+    if (role === "student" && adminId) {
+      newUser.adminId = adminId;
+      // Link student to admin
+      await User.findByIdAndUpdate(adminId, { $push: { linkedStudents: newUser._id } });
+    }
+
+    await newUser.save();
+    res.status(201).json({ message: "User registered successfully", user: newUser });
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch test list" });
+    console.error(err);
+    res.status(500).json({ error: "Registration failed" });
   }
 });
 
-// GET questions for a test
-router.get("/test/:testId/questions", async (req, res) => {
+// Login route
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
   try {
-    const questions = await Question.find({ testId: req.params.testId });
-    res.json(questions);
+    const user = await User.findOne({ email, password }); // Note: In production, use hashed passwords
+    if (!user) return res.status(401).json({ error: "Invalid credentials" });
+
+    res.json({
+      message: "Login successful",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch questions" });
+    res.status(500).json({ error: "Login failed" });
   }
 });
 
-// POST save quiz (admin)
-router.post("/test/:testId/save", async (req, res) => {
-  const testId = req.params.testId;
-  const questions = Array.isArray(req.body) ? req.body : req.body.questions;
-
-  if (!questions.length) return res.status(400).json({ error: "Invalid questions data" });
-
+// Get students for a specific admin
+router.get("/admin/:adminId/students", async (req, res) => {
   try {
-    await Question.deleteMany({ testId });
-    await Question.insertMany(questions.map(q => ({ ...q, testId })));
-    res.json({ message: "Test saved successfully" });
+    const students = await User.find({ adminId: req.params.adminId, role: "student" });
+    res.json(students);
   } catch (err) {
-    res.status(500).json({ error: "Failed to save test" });
-  }
-});
-
-// POST submit quiz (student)
-router.post("/test/:testId/submit", async (req, res) => {
-  const { testId } = req.params;
-  const { name, userCode, answers } = req.body;
-  if (!name || !userCode || !Array.isArray(answers)) return res.status(400).json({ error: "Invalid data" });
-
-  try {
-    const saved = await Response.create({ testId, name, userCode, answers });
-    res.json({ message: "Response saved", data: saved });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to save response" });
-  }
-});
-
-// GET responses (admin), with filter by userCode
-router.get("/test/:testId/responses", async (req, res) => {
-  try {
-    const { userCode } = req.query;
-    const query = { testId: req.params.testId };
-    if (userCode) query.userCode = userCode;
-    const data = await Response.find(query);
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch responses" });
+    res.status(500).json({ error: "Failed to fetch students" });
   }
 });
 
