@@ -130,7 +130,7 @@
           <td>${resp.userCode || "-"}</td>
           <td>${ans.question}</td>
           <td>${ans.selected}</td>
-          <td>${new Date(resp.timestamp).toLocaleString()}</td>
+          <td>${new Date(resp.submittedAt).toLocaleString()}</td>
         `;
         tbody.appendChild(row);
       });
