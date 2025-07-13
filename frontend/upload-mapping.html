@@ -1,1 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Upload Admin-Student Mapping</title>
+  <style>
+    body {
+      font-family: Arial;
+      margin: 40px;
+    }
+    input, button {
+      font-size: 16px;
+      padding: 8px 12px;
+      margin-top: 10px;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>📂 Upload Admin-Student Mapping (CSV)</h2>
+
+  <p><strong>File Format:</strong><br><code>adminCode,adminName,studentCode,studentName</code></p>
+
+  <input type="file" id="fileInput" accept=".csv" />
+  <br>
+  <button onclick="uploadMapping()">📤 Upload Mapping</button>
+
+  <div id="result"></div>
+
+  <script>
+    const BASE_URL = "https://quiz-app-4087.onrender.com"; // Adjust if needed
+
+    async function uploadMapping() {
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+      const resultBox = document.getElementById('result');
+
+      if (!file) {
+        alert("Please select a CSV file.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch(`${BASE_URL}/api/quiz/upload-mapping`, {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          resultBox.innerHTML = `✅ ${data.message}`;
+        } else {
+          resultBox.innerHTML = `❌ Failed: ${data.error || "Unknown error"}`;
+        }
+      } catch (err) {
+        console.error(err);
+        resultBox.innerHTML = "❌ Server error while uploading.";
+      }
+    }
+  </script>
+
+</body>
+</html>
 
