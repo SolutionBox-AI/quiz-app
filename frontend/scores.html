@@ -1,35 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>View Scores</title>
+  <meta charset="UTF-8">
+  <title>📊 Quiz Scores</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 40px; }
-    select, input, button {
-      font-size: 16px;
-      padding: 6px;
-      margin: 5px;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background-color: #f0f0f0;
-    }
-    #scoreTableContainer {
-      max-height: 500px;
-      overflow: auto;
-    }
+    body { font-family: Arial; margin: 40px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    button { margin: 5px; padding: 8px 16px; font-size: 16px; }
   </style>
 </head>
 <body>
-
   <script>
     if (sessionStorage.getItem("role") !== "admin") {
       alert("Access denied. Please login as admin.");
@@ -37,132 +19,103 @@
     }
   </script>
 
-  <h2>📈 View Student Scores</h2>
+  <h2>📊 Quiz Scores</h2>
 
   <label>Select Test:</label>
   <select id="testSelect">
-    <option value="">--Loading Tests--</option>
+    <option value="">-- Loading tests --</option>
   </select>
 
-  <label>Student Name (optional):</label>
-  <input type="text" id="studentName" placeholder="e.g. Abhishek Bhardwaj" />
-
-  <button onclick="loadScores()">🔍 View Scores</button>
+  <button onclick="loadScores()">View Scores</button>
   <button onclick="downloadCSV()">📄 Download CSV</button>
-  <button onclick="printScores()">🖨 Printable View</button>
-  <button onclick="logout()">🚪 Logout</button>
+  <button onclick="window.print()">🖨 Print</button>
+  <button onclick="goBack()">⬅ Back to Admin</button>
 
-  <div id="scoreTableContainer"></div>
+  <table id="scoreTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>Student Name</th>
+        <th>User Code</th>
+        <th>Score</th>
+        <th>Total</th>
+        <th>Submitted At</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
   <script>
     const BASE_URL = "https://quiz-app-4087.onrender.com";
 
-    // Load test list
     window.onload = () => {
       fetch(`${BASE_URL}/api/quiz/tests`)
         .then(res => res.json())
         .then(tests => {
-          const sel = document.getElementById('testSelect');
-          sel.innerHTML = '<option value="">--Select Test--</option>';
-          tests.forEach(t => {
-            const opt = document.createElement('option');
-            opt.value = t;
-            opt.textContent = t;
-            sel.appendChild(opt);
+          const select = document.getElementById("testSelect");
+          select.innerHTML = '<option value="">-- Select Test --</option>';
+          tests.forEach(test => {
+            const opt = document.createElement("option");
+            opt.value = test;
+            opt.textContent = test;
+            select.appendChild(opt);
           });
         })
         .catch(err => {
-          alert("Failed to load test list.");
           console.error(err);
+          alert("❌ Failed to load test list.");
         });
     };
 
-    // GET: Scores for a test (admin)
-router.get("/test/:testId/scores", async (req, res) => {
-  try {
-    const questions = await Question.find({ testId: req.params.testId });
-    const responses = await Response.find({ testId: req.params.testId });
+    function loadScores() {
+      const testId = document.getElementById("testSelect").value;
+      if (!testId) return alert("Please select a test.");
 
-    const scores = responses.map(response => {
-      let score = 0;
-
-      response.answers.forEach(answer => {
-        const q = questions.find(q => q.question === answer.question);
-        if (q && q.correctAnswer === answer.selected) {
-          score++;
-        }
-      });
-
-      return {
-        name: response.name,
-        userCode: response.userCode || "N/A",
-        score,
-        total: questions.length,
-        submittedAt: response.submittedAt
-      };
-    });
-
-    res.json(scores);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to calculate scores" });
-  }
-});
+      fetch(`${BASE_URL}/api/quiz/test/${testId}/scores`)
+        .then(res => res.json())
+        .then(scores => {
+          const table = document.getElementById("scoreTable");
+          const tbody = table.querySelector("tbody");
+          tbody.innerHTML = "";
+          scores.forEach(s => {
+            const row = `<tr>
+              <td>${s.name}</td>
+              <td>${s.userCode || ""}</td>
+              <td>${s.score}</td>
+              <td>${s.total}</td>
+              <td>${new Date(s.submittedAt).toLocaleString()}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+          });
+          table.style.display = "table";
+        })
+        .catch(err => {
+          console.error(err);
+          alert("❌ Failed to load scores.");
+        });
+    }
 
     function downloadCSV() {
-      const table = document.querySelector("#scoreTableContainer table");
-      if (!table) return alert("No scores available to download.");
+      const rows = [["Student Name", "User Code", "Score", "Total", "Submitted At"]];
+      const tableRows = document.querySelectorAll("#scoreTable tbody tr");
 
-      let csv = "";
-      const rows = table.querySelectorAll("tr");
-
-      rows.forEach(row => {
-        const cols = row.querySelectorAll("th, td");
-        const values = Array.from(cols).map(col => `"${col.textContent.trim()}"`);
-        csv += values.join(",") + "\n";
+      tableRows.forEach(row => {
+        const cells = Array.from(row.querySelectorAll("td")).map(td => td.textContent);
+        rows.push(cells);
       });
 
-      const blob = new Blob([csv], { type: "text/csv" });
+      const csvContent = rows.map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
 
       const a = document.createElement("a");
       a.href = url;
-      a.download = `scores-${document.getElementById("testSelect").value}.csv`;
-      document.body.appendChild(a);
+      a.download = "scores.csv";
       a.click();
-      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
-    function printScores() {
-      const tableHtml = document.getElementById("scoreTableContainer").innerHTML;
-      if (!tableHtml) return alert("No data to print.");
-
-      const printWindow = window.open('', '_blank');
-      const styles = `
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; }
-          table { border-collapse: collapse; width: 100%; }
-          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-          th { background-color: #f0f0f0; }
-        </style>
-      `;
-
-      printWindow.document.write(`
-        <html>
-          <head><title>Printable Scores</title>${styles}</head>
-          <body>
-            <h2>📋 Quiz Scores - ${document.getElementById("testSelect").value}</h2>
-            ${tableHtml}
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-    }
-
-    function logout() {
-      sessionStorage.clear();
-      window.location.href = "index.html";
+    function goBack() {
+      window.location.href = "admin.html";
     }
   </script>
 </body>
