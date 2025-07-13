@@ -77,50 +77,37 @@
         });
     };
 
-    function loadScores() {
-      const testId = document.getElementById('testSelect').value;
-      const studentFilter = document.getElementById('studentName').value.trim().toLowerCase();
+    // GET: Scores for a test (admin)
+router.get("/test/:testId/scores", async (req, res) => {
+  try {
+    const questions = await Question.find({ testId: req.params.testId });
+    const responses = await Response.find({ testId: req.params.testId });
 
-      if (!testId) return alert("Please select a test.");
+    const scores = responses.map(response => {
+      let score = 0;
 
-      fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`)
-        .then(res => res.json())
-        .then(responses => {
-          if (!responses.length) {
-            document.getElementById("scoreTableContainer").innerHTML = "<p>No responses found.</p>";
-            return;
-          }
+      response.answers.forEach(answer => {
+        const q = questions.find(q => q.question === answer.question);
+        if (q && q.correctAnswer === answer.selected) {
+          score++;
+        }
+      });
 
-          const filtered = studentFilter
-            ? responses.filter(r => r.name.toLowerCase().includes(studentFilter))
-            : responses;
+      return {
+        name: response.name,
+        userCode: response.userCode || "N/A",
+        score,
+        total: questions.length,
+        submittedAt: response.submittedAt
+      };
+    });
 
-          if (!filtered.length) {
-            document.getElementById("scoreTableContainer").innerHTML = "<p>No matching student found.</p>";
-            return;
-          }
-
-          let html = "<table><thead><tr><th>Student Name</th><th>User Code</th><th>Score</th><th>Total</th><th>Submitted At</th></tr></thead><tbody>";
-
-          filtered.forEach(r => {
-            const score = r.answers.filter(a => a.selected === a.correctAnswer).length;
-            html += `<tr>
-              <td>${r.name || "-"}</td>
-              <td>${r.userCode || "-"}</td>
-              <td>${score}</td>
-              <td>${r.answers.length}</td>
-              <td>${new Date(r.submittedAt).toLocaleString()}</td>
-            </tr>`;
-          });
-
-          html += "</tbody></table>";
-          document.getElementById("scoreTableContainer").innerHTML = html;
-        })
-        .catch(err => {
-          alert("❌ Failed to load scores.");
-          console.error(err);
-        });
-    }
+    res.json(scores);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to calculate scores" });
+  }
+});
 
     function downloadCSV() {
       const table = document.querySelector("#scoreTableContainer table");
