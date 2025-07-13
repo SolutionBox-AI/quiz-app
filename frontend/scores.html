@@ -1,42 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>📈 View Quiz Scores</title>
+  <title>View Scores</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-      background: #f4f6f9;
-    }
-    h2 {
-      color: #333;
-    }
-    select, button {
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    select, input, button {
       font-size: 16px;
-      padding: 8px 12px;
-      margin: 10px 5px;
+      padding: 6px;
+      margin: 5px;
     }
     table {
-      width: 100%;
       border-collapse: collapse;
+      width: 100%;
       margin-top: 20px;
-      background: white;
     }
     th, td {
       border: 1px solid #ccc;
-      padding: 10px;
-      text-align: center;
+      padding: 8px;
+      text-align: left;
     }
     th {
-      background: #007bff;
-      color: white;
+      background-color: #f0f0f0;
     }
-    #scoreTable {
-      display: none;
-    }
-    #message {
-      color: red;
+    #scoreTableContainer {
+      max-height: 500px;
+      overflow: auto;
     }
   </style>
 </head>
@@ -44,126 +32,151 @@
 
   <script>
     if (sessionStorage.getItem("role") !== "admin") {
-      alert("Access denied. Login as admin.");
+      alert("Access denied. Please login as admin.");
       window.location.href = "index.html";
     }
   </script>
 
-  <h2>📊 Admin Panel - View Quiz Scores</h2>
+  <h2>📈 View Student Scores</h2>
 
   <label>Select Test:</label>
   <select id="testSelect">
-    <option value="">-- Select Test --</option>
+    <option value="">--Loading Tests--</option>
   </select>
 
-  <button onclick="loadScores()">📥 Load Scores</button>
-  <button onclick="downloadCSV()">⬇️ Download CSV</button>
-  <button onclick="window.location.href='admin.html'">🏠 Back to Admin</button>
+  <label>Student Name (optional):</label>
+  <input type="text" id="studentName" placeholder="e.g. Abhishek Bhardwaj" />
+
+  <button onclick="loadScores()">🔍 View Scores</button>
+  <button onclick="downloadCSV()">📄 Download CSV</button>
+  <button onclick="printScores()">🖨 Printable View</button>
   <button onclick="logout()">🚪 Logout</button>
 
-  <p id="message"></p>
-
-  <table id="scoreTable">
-    <thead>
-      <tr>
-        <th>User Code</th>
-        <th>Name</th>
-        <th>Correct Answers</th>
-        <th>Total Questions</th>
-        <th>Score (%)</th>
-      </tr>
-    </thead>
-    <tbody id="scoreBody"></tbody>
-  </table>
+  <div id="scoreTableContainer"></div>
 
   <script>
     const BASE_URL = "https://quiz-app-4087.onrender.com";
 
+    // Load test list
     window.onload = () => {
-      fetch(`${BASE_URL}/tests`)
+      fetch(`${BASE_URL}/api/quiz/tests`)
         .then(res => res.json())
         .then(tests => {
-          const select = document.getElementById('testSelect');
-          select.innerHTML = '<option value="">-- Select Test --</option>';
+          const sel = document.getElementById('testSelect');
+          sel.innerHTML = '<option value="">--Select Test--</option>';
           tests.forEach(t => {
             const opt = document.createElement('option');
             opt.value = t;
             opt.textContent = t;
-            select.appendChild(opt);
+            sel.appendChild(opt);
           });
         })
-        .catch(() => document.getElementById("message").textContent = "❌ Failed to load test list.");
+        .catch(err => {
+          alert("Failed to load test list.");
+          console.error(err);
+        });
     };
 
-    async function loadScores() {
+    function loadScores() {
       const testId = document.getElementById('testSelect').value;
-      const message = document.getElementById("message");
-      message.textContent = "";
-      document.getElementById("scoreTable").style.display = "none";
+      const studentFilter = document.getElementById('studentName').value.trim().toLowerCase();
 
-      if (!testId) {
-        message.textContent = "⚠️ Please select a test.";
-        return;
-      }
+      if (!testId) return alert("Please select a test.");
 
-      try {
-        const res = await fetch(`${BASE_URL}/test/${testId}/responses`);
-        const data = await res.json();
+      fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`)
+        .then(res => res.json())
+        .then(responses => {
+          if (!responses.length) {
+            document.getElementById("scoreTableContainer").innerHTML = "<p>No responses found.</p>";
+            return;
+          }
 
-        const resQ = await fetch(`${BASE_URL}/test/${testId}/questions`);
-        const questions = await resQ.json();
+          const filtered = studentFilter
+            ? responses.filter(r => r.name.toLowerCase().includes(studentFilter))
+            : responses;
 
-        const tbody = document.getElementById('scoreBody');
-        tbody.innerHTML = "";
+          if (!filtered.length) {
+            document.getElementById("scoreTableContainer").innerHTML = "<p>No matching student found.</p>";
+            return;
+          }
 
-        data.forEach(response => {
-          let correct = 0;
-          response.answers.forEach(ans => {
-            const question = questions.find(q => q.question === ans.question);
-            if (question && question.correctAnswer === ans.selected) correct++;
+          let html = "<table><thead><tr><th>Student Name</th><th>User Code</th><th>Score</th><th>Total</th><th>Submitted At</th></tr></thead><tbody>";
+
+          filtered.forEach(r => {
+            const score = r.answers.filter(a => a.selected === a.correctAnswer).length;
+            html += `<tr>
+              <td>${r.name || "-"}</td>
+              <td>${r.userCode || "-"}</td>
+              <td>${score}</td>
+              <td>${r.answers.length}</td>
+              <td>${new Date(r.submittedAt).toLocaleString()}</td>
+            </tr>`;
           });
 
-          const row = `<tr>
-            <td>${response.userCode || "N/A"}</td>
-            <td>${response.name}</td>          
-            <td>${correct}</td>
-            <td>${questions.length}</td>
-            <td>${((correct / questions.length) * 100).toFixed(2)}%</td>
-          </tr>`;
-          tbody.innerHTML += row;
+          html += "</tbody></table>";
+          document.getElementById("scoreTableContainer").innerHTML = html;
+        })
+        .catch(err => {
+          alert("❌ Failed to load scores.");
+          console.error(err);
         });
-
-        document.getElementById("scoreTable").style.display = "table";
-      } catch (err) {
-        console.error(err);
-        message.textContent = "❌ Failed to load scores.";
-      }
     }
 
     function downloadCSV() {
-      const rows = [["Name", "Correct Answers", "Total Questions", "Score (%)"]];
-      document.querySelectorAll("#scoreBody tr").forEach(tr => {
-        const row = [];
-        tr.querySelectorAll("td").forEach(td => row.push(td.textContent));
-        rows.push(row);
+      const table = document.querySelector("#scoreTableContainer table");
+      if (!table) return alert("No scores available to download.");
+
+      let csv = "";
+      const rows = table.querySelectorAll("tr");
+
+      rows.forEach(row => {
+        const cols = row.querySelectorAll("th, td");
+        const values = Array.from(cols).map(col => `"${col.textContent.trim()}"`);
+        csv += values.join(",") + "\n";
       });
 
-      const csvContent = rows.map(e => e.join(",")).join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv" });
+      const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
 
       const a = document.createElement("a");
       a.href = url;
-      a.download = "quiz-scores.csv";
+      a.download = `scores-${document.getElementById("testSelect").value}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
     }
-       function logout() {
+
+    function printScores() {
+      const tableHtml = document.getElementById("scoreTableContainer").innerHTML;
+      if (!tableHtml) return alert("No data to print.");
+
+      const printWindow = window.open('', '_blank');
+      const styles = `
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+          th { background-color: #f0f0f0; }
+        </style>
+      `;
+
+      printWindow.document.write(`
+        <html>
+          <head><title>Printable Scores</title>${styles}</head>
+          <body>
+            <h2>📋 Quiz Scores - ${document.getElementById("testSelect").value}</h2>
+            ${tableHtml}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+
+    function logout() {
       sessionStorage.clear();
       window.location.href = "index.html";
     }
   </script>
-
 </body>
 </html>
