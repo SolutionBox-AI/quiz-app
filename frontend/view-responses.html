@@ -83,7 +83,7 @@
     function loadResponses() {
       const testId = document.getElementById("testSelect").value;
       if (!testId) return alert("Please select a test.");
-
+    console.log(testId);
       fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`)
         .then(res => res.json())
         .then(data => {
