@@ -1,139 +1,76 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Quiz App - Login</title>
+  <title>Login - Quiz App</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      text-align: center;
-      padding: 60px;
+      margin: 60px;
     }
-
-    h2 {
-      color: #333;
-    }
-
-    input, button {
-      padding: 10px;
-      margin: 10px;
+    input, select, button {
       font-size: 16px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-
-    button {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #45a049;
-    }
-
-    #message {
-      color: red;
-      margin-top: 10px;
-    }
-
-    #serverStatus {
-      background: #fff3cd;
-      border: 1px solid #ffeeba;
-      color: #856404;
-      padding: 20px;
-      margin: 30px auto;
-      width: 50%;
-      display: none;
-      border-radius: 8px;
-    }
-
-    #loadingSpinner {
-      display: none;
-      font-size: 18px;
-      color: #333;
-      margin: 20px 0;
-    }
-
-    #wakeStatus {
+      padding: 10px;
+      margin: 8px 0;
+      width: 300px;
       display: block;
-      margin-top: 10px;
-      font-size: 14px;
     }
   </style>
 </head>
 <body>
+  <h2>🔐 Login to Quiz App</h2>
 
-  <h2>🔐 Welcome to Online Quiz App</h2>
+  <label for="email">Email:</label>
+  <input type="email" id="email" placeholder="Enter email" required />
 
-  <!-- Spinner -->
-  <div id="loadingSpinner">⏳ Checking server status...</div>
+  <label for="password">Password:</label>
+  <input type="password" id="password" placeholder="Enter password" required />
 
-  <!-- Server sleep message -->
-  <div id="serverStatus">
-    💤 <strong>Server is sleeping.</strong><br>
-    Please wait or click below to wake it up.
-    <br><br>
-    <button onclick="wakeServer()">🔄 Wake Server</button>
-    <span id="wakeStatus"></span>
-  </div>
-
-  <!-- Login Form -->
-  <div id="loginForm">
-    <label>👤 Username: <input type="text" id="username" /></label><br>
-    <label>🔒 Password: <input type="password" id="password" /></label><br>
-    <button onclick="login()">Login</button>
-    <p id="message"></p>
-  </div>
+  <button onclick="login()">Login</button>
+  <button onclick="window.location.href='register.html'">Register</button>
 
   <script>
     const BASE_URL = "https://quiz-app-4087.onrender.com";
 
-    // Check server status
-    async function checkServerStatus() {
-      document.getElementById("loadingSpinner").style.display = "block";
-      try {
-        const res = await fetch(`${BASE_URL}/tests`, { method: "GET" });
-        if (!res.ok) throw new Error();
-      } catch (err) {
-        document.getElementById("serverStatus").style.display = "block";
-      } finally {
-        document.getElementById("loadingSpinner").style.display = "none";
-      }
-    }
-
-    // Wake server manually
-    async function wakeServer() {
-      document.getElementById("wakeStatus").textContent = "⏳ Waking up server...";
-      try {
-        await fetch(BASE_URL);
-        document.getElementById("wakeStatus").textContent = "✅ Server is waking. Try login in 10–15 seconds.";
-      } catch {
-        document.getElementById("wakeStatus").textContent = "❌ Could not wake server. Try again in a few seconds.";
-      }
-    }
-
-    // Login logic
-    function login() {
-      const username = document.getElementById("username").value.trim();
+    async function login() {
+      const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value.trim();
-      const message = document.getElementById("message");
 
-      if (username === "admin" && password === "admin123") {
-        sessionStorage.setItem("role", "admin");
-        window.location.href = "admin.html";
-      } else if (username === "student" && password === "student123") {
-        sessionStorage.setItem("role", "student");
-        window.location.href = "quiz.html";
-      } else {
-        message.textContent = "❌ Invalid credentials. Try again.";
+      if (!email || !password) {
+        alert("Please fill all fields.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${BASE_URL}/api/users/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          return alert("❌ " + (data.error || "Login failed"));
+        }
+
+        // Save user info to sessionStorage
+        sessionStorage.setItem("userId", data.user._id);
+        sessionStorage.setItem("name", data.user.name);
+        sessionStorage.setItem("email", data.user.email);
+        sessionStorage.setItem("role", data.user.role);
+
+        // Redirect based on role
+        if (data.user.role === "admin") {
+          window.location.href = "admin.html";
+        } else {
+          window.location.href = "quiz.html";
+        }
+
+      } catch (err) {
+        console.error(err);
+        alert("Server error during login.");
       }
     }
-
-    // Run status check
-    window.onload = checkServerStatus;
   </script>
 </body>
 </html>
