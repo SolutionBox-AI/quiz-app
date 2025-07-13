@@ -14,146 +14,142 @@
     th {
       background-color: #f2f2f2;
     }
-    select, button, input {
+    select, button {
       padding: 8px 12px; font-size: 16px; margin-right: 10px;
-    }
-    #studentList {
-      margin-top: 10px;
-      font-weight: bold;
-      color: #333;
     }
   </style>
 </head>
 <body>
 
-  <script>
-    if (sessionStorage.getItem("role") !== "admin") {
-      alert("Access denied. Please login as admin.");
-      window.location.href = "index.html";
-    }
-  </script>
+<script>
+  if (sessionStorage.getItem("role") !== "admin") {
+    alert("Access denied. Please login as admin.");
+    window.location.href = "index.html";
+  }
+</script>
 
-  <h2>📊 View Student Responses</h2>
+<h2>📋 View Student Responses</h2>
 
-  <label for="testSelect">Select Test:</label>
-  <select id="testSelect">
-    <option value="">--Loading Tests--</option>
-  </select>
+<label for="testSelect">Select Test:</label>
+<select id="testSelect" onchange="loadStudents()">
+  <option value="">--Loading Tests--</option>
+</select>
 
-  <label for="studentFilter">Filter by Student Name/User Code:</label>
-  <input type="text" id="studentFilter" oninput="filterResponses()" placeholder="Start typing..." />
+<label for="studentSelect">Select Student:</label>
+<select id="studentSelect">
+  <option value="">--All Students--</option>
+</select>
 
-  <button onclick="fetchResponses()">👁 View Responses</button>
-  <button onclick="downloadExcel()">📄 Download Excel</button>
-  <button onclick="goBack()">🔙 Back to Admin</button>
+<button onclick="fetchResponses()">👁 View Responses</button>
+<button onclick="downloadExcel()">📄 Download Excel</button>
+<button onclick="goBack()">🔙 Back to Admin</button>
 
-  <div id="studentList"></div>
+<table id="responseTable" style="display:none;">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>User Code</th>
+      <th>Question</th>
+      <th>Answer</th>
+      <th>Submitted At</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
 
-  <table id="responseTable" style="display:none;">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>User Code</th>
-        <th>Question</th>
-        <th>Answer</th>
-        <th>Submitted At</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+<script>
+  const BASE_URL = "https://quiz-app-4087.onrender.com";
+  let allResponses = [];
 
-  <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com";
-
-    window.onload = () => {
-      fetch(`${BASE_URL}/api/quiz/tests`)
-        .then(res => res.json())
-        .then(tests => {
-          const select = document.getElementById("testSelect");
-          select.innerHTML = '<option value="">--Select Test--</option>';
-          tests.forEach(test => {
-            const opt = document.createElement("option");
-            opt.value = test;
-            opt.textContent = test;
-            select.appendChild(opt);
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          alert("❌ Failed to load test list.");
+  // Load Test List
+  window.onload = () => {
+    fetch(`${BASE_URL}/api/quiz/tests`)
+      .then(res => res.json())
+      .then(tests => {
+        const testSelect = document.getElementById("testSelect");
+        testSelect.innerHTML = '<option value="">--Select Test--</option>';
+        tests.forEach(test => {
+          const opt = document.createElement("option");
+          opt.value = test;
+          opt.textContent = test;
+          testSelect.appendChild(opt);
         });
-    };
-
-    let currentResponses = [];
-
-    async function fetchResponses() {
-      const testId = document.getElementById("testSelect").value;
-      if (!testId) return alert("Please select a test.");
-
-      try {
-        const res = await fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`);
-        const data = await res.json();
-        currentResponses = data;
-        showStudentList(data);
-        renderResponses(data);
-      } catch (err) {
+      })
+      .catch(err => {
         console.error(err);
-        alert("❌ Failed to load responses.");
-      }
-    }
+        alert("❌ Failed to load test list.");
+      });
+  };
 
-    function showStudentList(data) {
-      const uniqueNames = Array.from(
-        new Set(data.map(r => `${r.name || "-"} - ${r.userCode || "-"}`))
-      );
-      const list = uniqueNames.join(", ");
-      document.getElementById("studentList").textContent =
-        "🧑‍🎓 Students who attempted: " + list;
-    }
+  async function loadStudents() {
+    const testId = document.getElementById("testSelect").value;
+    if (!testId) return;
 
-    function renderResponses(data) {
-      const tbody = document.querySelector("#responseTable tbody");
-      tbody.innerHTML = "";
+    try {
+      const resR = await fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`);
+      allResponses = await resR.json();
 
-      const filter = document.getElementById("studentFilter").value.toLowerCase();
-
-      const filtered = data.filter(r =>
-        (r.name || "").toLowerCase().includes(filter) ||
-        (r.userCode || "").toLowerCase().includes(filter)
-      );
-
-      filtered.forEach(resp => {
-        resp.answers.forEach(ans => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${resp.name || "-"}</td>
-            <td>${resp.userCode || "-"}</td>
-            <td>${ans.question}</td>
-            <td>${ans.selected}</td>
-            <td>${new Date(resp.submittedAt).toLocaleString()}</td>
-          `;
-          tbody.appendChild(row);
-        });
+      const studentMap = new Map();
+      allResponses.forEach(r => {
+        const key = `${r.name || "-"} - ${r.userCode || "-"}`;
+        if (!studentMap.has(key)) {
+          studentMap.set(key, key);
+        }
       });
 
-      document.getElementById("responseTable").style.display = "table";
-    }
+      const studentSelect = document.getElementById("studentSelect");
+      studentSelect.innerHTML = '<option value="">--All Students--</option>';
+      for (let [key] of studentMap) {
+        const opt = document.createElement("option");
+        opt.value = key;
+        opt.textContent = key;
+        studentSelect.appendChild(opt);
+      }
 
-    function filterResponses() {
-      renderResponses(currentResponses);
+    } catch (err) {
+      console.error(err);
+      alert("❌ Failed to load students.");
     }
+  }
 
-    function downloadExcel() {
-      const table = document.getElementById("responseTable");
-      if (table.style.display === "none") return alert("No responses to download.");
-      const wb = XLSX.utils.table_to_book(table, { sheet: "Responses" });
-      XLSX.writeFile(wb, "quiz-responses.xlsx");
-    }
+  function fetchResponses() {
+    const selectedStudent = document.getElementById("studentSelect").value;
 
-    function goBack() {
-      window.location.href = "admin.html";
-    }
-  </script>
+    const tbody = document.querySelector("#responseTable tbody");
+    tbody.innerHTML = "";
+
+    const filteredResponses = selectedStudent
+      ? allResponses.filter(r => `${r.name || "-"} - ${r.userCode || "-"}` === selectedStudent)
+      : allResponses;
+
+    filteredResponses.forEach(resp => {
+      (resp.answers || []).forEach(ans => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${resp.name || "-"}</td>
+          <td>${resp.userCode || "-"}</td>
+          <td>${ans.question}</td>
+          <td>${ans.selected}</td>
+          <td>${new Date(resp.timestamp).toLocaleString()}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    });
+
+    document.getElementById("responseTable").style.display = "table";
+  }
+
+  function downloadExcel() {
+    const table = document.getElementById("responseTable");
+    if (table.style.display === "none") return alert("No responses to download.");
+    const wb = XLSX.utils.table_to_book(table, { sheet: "Responses" });
+    XLSX.writeFile(wb, "quiz-responses.xlsx");
+  }
+
+  function goBack() {
+    window.location.href = "admin.html";
+  }
+</script>
 
 </body>
 </html>
