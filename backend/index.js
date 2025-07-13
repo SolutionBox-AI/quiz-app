@@ -6,9 +6,6 @@ require("dotenv").config(); // Load environment variables from .env (locally)
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const mappingRoutes = require("./routes/mappingRoutes");
-app.use("/api/mapping", mappingRoutes);
-
 // Middleware
 app.use(cors());
 app.use(express.json());
