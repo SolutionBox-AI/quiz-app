@@ -1,176 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8"/>
   <title>Create / Edit Test</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 30px; background: #f8f9fa; }
-    h1 { color: #333; }
-    label, select, input, textarea, button { margin: 8px 0; font-size: 16px; }
-    textarea { width: 100%; }
-    button { padding: 8px 16px; margin-right: 10px; }
-    .question-block { background: #fff; padding: 15px; margin: 10px 0; border-radius: 6px; border: 1px solid #ccc; }
-    #questionsContainer hr { margin: 20px 0; }
+    body { font-family: Arial, sans-serif; background: #f8f9fa; padding: 30px; }
+    h1, label { color: #333; }
+    select, input, textarea, button {
+      display: block; width: 100%;
+      margin: 10px 0; font-size: 16px;
+      padding: 8px;
+    }
+    .question-block {
+      background: #fff; padding: 15px;
+      margin: 20px 0; border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    .footer-buttons { margin-top: 20px; }
   </style>
 </head>
 <body>
+  <script>
+    if (sessionStorage.getItem("role") !== "admin") {
+      alert("Access denied."); window.location.href = "index.html";
+    }
+  </script>
 
-<h1>📝 Test Creator</h1>
+  <h1>📝 Create / Edit Test</h1>
 
-<!-- Choose Action -->
-<label>Choose Action:</label>
-<select id="actionSelect" onchange="handleActionChange()">
-  <option value="">-- Select --</option>
-  <option value="create">➕ Create New Test</option>
-  <option value="edit">✏️ Edit Existing Test</option>
-</select>
-
-<!-- Create New Test -->
-<div id="newTestDiv" style="display: none;">
-  <label>Enter New Test Name:</label>
-  <input type="text" id="newTestId" placeholder="e.g., history-class9">
-</div>
-
-<!-- Edit Existing Test -->
-<div id="editTestDiv" style="display: none;">
-  <label>Select Test to Edit:</label>
-  <select id="editTestSelect">
-    <option>Loading...</option>
+  <label>Choose Action:</label>
+  <select id="actionSelect" onchange="handleAction()">
+    <option value="">-- Select --</option>
+    <option value="create">➕ Create New Test</option>
+    <option value="edit">✏️ Edit Existing Test</option>
   </select>
-</div>
 
-<br>
-<button onclick="loadQuestions()">📥 Load Test</button>
-<button onclick="addQuestion()">➕ Add Question</button>
-<button onclick="saveTest()">💾 Save Test</button>
-<button onclick="logout()">🚪 Logout</button>
+  <div id="newTestDiv" style="display:none;">
+    <label>New Test Name:</label>
+    <input id="newTestId" placeholder="e.g. demo-test-1" />
+  </div>
 
-<div id="questionsContainer"></div>
+  <div id="editTestDiv" style="display:none;">
+    <label>Select Test to Edit:</label>
+    <select id="editTestSelect"><option>Loading tests...</option></select>
+  </div>
 
-<script>
-const BASE_URL = "https://quiz-app-4087.onrender.com";
-let currentTestId = "";
-let questionCount = 0;
+  <div class="footer-buttons">
+    <button onclick="loadQuestions()">📥 Load Test</button>
+    <button onclick="addQuestion()">➕ Add Question</button>
+  </div>
 
-function logout() {
-  sessionStorage.clear();
-  window.location.href = "index.html";
-}
+  <div id="questionsContainer"></div>
 
-function handleActionChange() {
-  const action = document.getElementById("actionSelect").value;
-  document.getElementById("newTestDiv").style.display = action === "create" ? "block" : "none";
-  document.getElementById("editTestDiv").style.display = action === "edit" ? "block" : "none";
-}
+  <div class="footer-buttons">
+    <button onclick="saveTest()">💾 Save Test</button>
+    <button onclick="location.href='admin.html'">🏠 Back to Admin</button>
+  </div>
 
-// Fetch existing test names
-window.onload = () => {
-  fetch(`${BASE_URL}/tests`)
-    .then(res => res.json())
-    .then(tests => {
-      const sel = document.getElementById("editTestSelect");
-      sel.innerHTML = `<option value="">-- Select Test --</option>`;
-      tests.forEach(test => {
-        const opt = document.createElement("option");
-        opt.value = test;
-        opt.textContent = test;
-        sel.appendChild(opt);
+  <script>
+    const BASE = "https://quiz-app-4087.onrender.com/api/quiz";
+    let currentTestId = "";
+    let qCount = 0;
+
+    function handleAction() {
+      const shell = document.getElementById("actionSelect").value;
+      document.getElementById("newTestDiv").style.display = shell === "create" ? "block":"none";
+      document.getElementById("editTestDiv").style.display = shell === "edit" ? "block":"none";
+      if (shell === "edit") loadTestList();
+    }
+
+    function loadTestList() {
+      fetch(`${BASE}/tests`).then(r => r.json()).then(tests => {
+        const sel = document.getElementById("editTestSelect");
+        sel.innerHTML = '<option>-- Select --</option>';
+        tests.forEach(t=> sel.appendChild(new Option(t,t)));
       });
-    })
-    .catch(() => alert("❌ Failed to load test list."));
-};
+    }
 
-function loadQuestions() {
-  const action = document.getElementById("actionSelect").value;
-  if (action === "create") {
-    currentTestId = document.getElementById("newTestId").value.trim();
-    if (!currentTestId) return alert("Please enter test name.");
-    document.getElementById("questionsContainer").innerHTML = '';
-    questionCount = 0;
-  } else if (action === "edit") {
-    currentTestId = document.getElementById("editTestSelect").value;
-    if (!currentTestId) return alert("Please select a test to edit.");
-    fetch(`${BASE_URL}/api/quiz/test/${currentTestId}/questions`)
-      .then(res => res.json())
-      .then(questions => {
-        questionCount = 0;
-        const container = document.getElementById("questionsContainer");
-        container.innerHTML = '';
-        questions.forEach(q => {
-          addQuestion(q.question, q.options, q.correctAnswer);
-        });
+    function loadQuestions() {
+      const action = document.getElementById("actionSelect").value;
+
+      if (action === "create") {
+        currentTestId = document.getElementById("newTestId").value.trim();
+        if (!currentTestId) return alert("Enter test name.");
+        document.getElementById("questionsContainer").innerHTML = "";
+        qCount = 0;
+
+      } else if (action === "edit") {
+        currentTestId = document.getElementById("editTestSelect").value;
+        if (!currentTestId) return alert("Select test.");
+
+        fetch(`${BASE}/test/${currentTestId}/questions`)
+          .then(r => r.json())
+          .then(ques => {
+            const cont = document.getElementById("questionsContainer");
+            cont.innerHTML = "";
+            qCount = 0;
+            ques.forEach(q=> addQuestion(q.question,q.options,q.correctAnswer));
+          })
+          .catch(()=>alert("Failed to load questions"));
+      }
+    }
+
+    function addQuestion(q="",ops=["","","",""],corr="") {
+      const cont = document.getElementById("questionsContainer");
+      qCount++;
+      const div = document.createElement("div");
+      div.className="question-block";
+      div.innerHTML = `
+        <h3>Q${qCount}</h3>
+        <textarea class="questionText">${q}</textarea><br>
+        A: <input class="optionA" value="${ops[0]}"><br>
+        B: <input class="optionB" value="${ops[1]}"><br>
+        C: <input class="optionC" value="${ops[2]}"><br>
+        D: <input class="optionD" value="${ops[3]}"><br>
+        Correct (A/B/C/D): <input class="correctAnswer" value="${["A","B","C","D"][ops.indexOf(corr)]||""}"><br>
+        <button onclick="this.parentNode.remove()">🗑 Delete question</button>
+      `;
+      cont.appendChild(div);
+    }
+
+    function saveTest() {
+      if (!currentTestId) return alert("No test loaded.");
+      const texts = document.querySelectorAll(".questionText");
+      const as = document.querySelectorAll(".optionA");
+      const bs = document.querySelectorAll(".optionB");
+      const cs = document.querySelectorAll(".optionC");
+      const ds = document.querySelectorAll(".optionD");
+      const corr = document.querySelectorAll(".correctAnswer");
+
+      const arr = [];
+      for (let i=0;i<texts.length;i++){
+        const ops=[as[i].value,bs[i].value,cs[i].value,ds[i].value];
+        const c=corr[i].value.toUpperCase();
+        const idx={"A":0,"B":1,"C":2,"D":3}[c];
+        if (idx===undefined) return alert(`Invalid correct letter at Q${i+1}`);
+        arr.push({question:texts[i].value, options:ops, correctAnswer:ops[idx]});
+      }
+      fetch(`${BASE}/test/${currentTestId}/save`, {
+        method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(arr)
       })
-      .catch(err => {
-        console.error(err);
-        alert("❌ Failed to load questions.");
-      });
-  }
-}
-
-function addQuestion(qText = "", options = ["", "", "", ""], correct = "") {
-  questionCount++;
-  const container = document.getElementById("questionsContainer");
-
-  const div = document.createElement("div");
-  div.className = "question-block";
-  div.innerHTML = `
-    <h3>Q${questionCount}</h3>
-    <textarea class="questionText" rows="2">${qText}</textarea><br>
-    A: <input type="text" class="optionA" value="${options[0]}"><br>
-    B: <input type="text" class="optionB" value="${options[1]}"><br>
-    C: <input type="text" class="optionC" value="${options[2]}"><br>
-    D: <input type="text" class="optionD" value="${options[3]}"><br>
-    Correct Answer (A/B/C/D): <input type="text" class="correctAnswer" value="${["A","B","C","D"][options.indexOf(correct)] || ""}"><br>
-    <button onclick="this.parentElement.remove()">🗑 Delete</button>
-  `;
-  container.appendChild(div);
-}
-
-async function saveTest() {
-  if (!currentTestId) return alert("No test selected or created.");
-
-  const questions = [];
-  const texts = document.querySelectorAll(".questionText");
-  const as = document.querySelectorAll(".optionA");
-  const bs = document.querySelectorAll(".optionB");
-  const cs = document.querySelectorAll(".optionC");
-  const ds = document.querySelectorAll(".optionD");
-  const corrects = document.querySelectorAll(".correctAnswer");
-
-  for (let i = 0; i < texts.length; i++) {
-    const opts = [as[i].value.trim(), bs[i].value.trim(), cs[i].value.trim(), ds[i].value.trim()];
-    const correct = corrects[i].value.trim().toUpperCase();
-    const correctIndex = { A: 0, B: 1, C: 2, D: 3 }[correct];
-
-    if (correctIndex === undefined) {
-      return alert(`❌ Question ${i + 1} has invalid correct answer. Use A/B/C/D.`);
+      .then(r=>r.json())
+      .then(d=> r.ok ? alert("Saved successfully!") : alert("Save failed: "+d.error))
+      .catch(()=>alert("Server error while saving."));
     }
-
-    questions.push({
-      question: texts[i].value.trim(),
-      options: opts,
-      correctAnswer: opts[correctIndex]
-    });
-  }
-
-  try {
-    const res = await fetch(`${BASE_URL}/api/quiz/test/${currentTestId}/save`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(questions)
-    });
-
-    const data = await res.json();
-    if (res.ok) {
-      alert("✅ Test saved successfully!");
-    } else {
-      alert("❌ Save failed: " + data.error);
-    }
-  } catch (err) {
-    console.error(err);
-    alert("⚠️ Server error while saving.");
-  }
-}
-</script>
+  </script>
 </body>
 </html>
