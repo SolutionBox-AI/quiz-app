@@ -14,160 +14,150 @@
     th {
       background-color: #f2f2f2;
     }
-    select, button, input {
+    select, button {
       padding: 8px 12px; font-size: 16px; margin-right: 10px;
-    }
-    #studentList {
-      margin-top: 10px;
-      font-weight: bold;
-      color: #333;
     }
   </style>
 </head>
 <body>
 
-  <script>
-    if (sessionStorage.getItem("role") !== "admin") {
-      alert("Access denied. Please login as admin.");
-      window.location.href = "index.html";
-    }
-  </script>
+<script>
+  if (sessionStorage.getItem("role") !== "admin") {
+    alert("Access denied. Please login as admin.");
+    window.location.href = "index.html";
+  }
+</script>
 
-  <h2>📈 View Student Scores</h2>
+<h2>📈 View Student Scores</h2>
 
-  <label for="testSelect">Select Test:</label>
-  <select id="testSelect">
-    <option value="">--Loading Tests--</option>
-  </select>
+<label for="testSelect">Select Test:</label>
+<select id="testSelect" onchange="loadStudents()">
+  <option value="">--Loading Tests--</option>
+</select>
 
-  <label for="studentFilter">Filter by Name/User Code:</label>
-  <input type="text" id="studentFilter" oninput="filterTable()" placeholder="Start typing..." />
+<label for="studentSelect">Select Student:</label>
+<select id="studentSelect">
+  <option value="">--Select Student--</option>
+</select>
 
-  <button onclick="fetchScores()">👁 View Scores</button>
-  <button onclick="downloadExcel()">📄 Download Excel</button>
-  <button onclick="goBack()">🔙 Back to Admin</button>
+<button onclick="fetchScores()">👁 View Scores</button>
+<button onclick="downloadExcel()">📄 Download Excel</button>
+<button onclick="goBack()">🔙 Back to Admin</button>
 
-  <div id="studentList"></div>
+<table id="scoreTable" style="display:none;">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>User Code</th>
+      <th>Score (%)</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
 
-  <table id="scoreTable" style="display:none;">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>User Code</th>
-        <th>Score (%)</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+<script>
+  const BASE_URL = "https://quiz-app-4087.onrender.com";
+  let allResponses = [], allQuestions = [];
 
-  <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com";
-    let currentScores = [];
-
-    window.onload = () => {
-      fetch(`${BASE_URL}/api/quiz/tests`)
-        .then(res => res.json())
-        .then(tests => {
-          const select = document.getElementById("testSelect");
-          select.innerHTML = '<option value="">--Select Test--</option>';
-          tests.forEach(test => {
-            const opt = document.createElement("option");
-            opt.value = test;
-            opt.textContent = test;
-            select.appendChild(opt);
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          alert("❌ Failed to load test list.");
+  // Load Test List
+  window.onload = () => {
+    fetch(`${BASE_URL}/api/quiz/tests`)
+      .then(res => res.json())
+      .then(tests => {
+        const select = document.getElementById("testSelect");
+        select.innerHTML = '<option value="">--Select Test--</option>';
+        tests.forEach(test => {
+          const opt = document.createElement("option");
+          opt.value = test;
+          opt.textContent = test;
+          select.appendChild(opt);
         });
-    };
-
-    async function fetchScores() {
-      const testId = document.getElementById("testSelect").value;
-      if (!testId) return alert("Please select a test.");
-
-      try {
-        const [resQ, resR] = await Promise.all([
-          fetch(`${BASE_URL}/api/quiz/test/${testId}/questions`),
-          fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`)
-        ]);
-
-        const questions = await resQ.json();
-        const responses = await resR.json();
-        currentScores = [];
-
-        const tbody = document.querySelector("#scoreTable tbody");
-        tbody.innerHTML = "";
-
-        const uniqueStudents = new Set();
-
-        responses.forEach(resp => {
-          let correct = 0;
-          resp.answers.forEach(ans => {
-            const q = questions.find(q => q.question === ans.question);
-            if (q && q.correctAnswer === ans.selected) correct++;
-          });
-
-          const scorePercent = questions.length
-            ? ((correct / questions.length) * 100).toFixed(2)
-            : "N/A";
-
-          currentScores.push({
-            name: resp.name || "-",
-            code: resp.userCode || "-",
-            score: scorePercent
-          });
-
-          uniqueStudents.add(`${resp.name || "-"} - ${resp.userCode || "-"}`);
-        });
-
-        document.getElementById("studentList").textContent =
-          "🧑‍🎓 Students who attempted: " + Array.from(uniqueStudents).join(", ");
-
-        renderScores(currentScores);
-      } catch (err) {
+      })
+      .catch(err => {
         console.error(err);
-        alert("❌ Failed to load scores.");
-      }
-    }
+        alert("❌ Failed to load test list.");
+      });
+  };
 
-    function renderScores(data) {
-      const filter = document.getElementById("studentFilter").value.toLowerCase();
-      const tbody = document.querySelector("#scoreTable tbody");
-      tbody.innerHTML = "";
+  async function loadStudents() {
+    const testId = document.getElementById("testSelect").value;
+    if (!testId) return;
 
-      data.filter(row =>
-        row.name.toLowerCase().includes(filter) ||
-        row.code.toLowerCase().includes(filter)
-      ).forEach(row => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${row.name}</td>
-          <td>${row.code}</td>
-          <td>${row.score}</td>
-        `;
-        tbody.appendChild(tr);
+    try {
+      const [resQ, resR] = await Promise.all([
+        fetch(`${BASE_URL}/api/quiz/test/${testId}/questions`),
+        fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`)
+      ]);
+      allQuestions = await resQ.json();
+      allResponses = await resR.json();
+
+      const uniqueStudents = new Map();
+      allResponses.forEach(r => {
+        const key = `${r.name || "-"} - ${r.userCode || "-"}`;
+        if (!uniqueStudents.has(key)) {
+          uniqueStudents.set(key, { name: r.name, code: r.userCode });
+        }
       });
 
-      document.getElementById("scoreTable").style.display = "table";
-    }
+      const studentSelect = document.getElementById("studentSelect");
+      studentSelect.innerHTML = '<option value="">--All Students--</option>';
+      uniqueStudents.forEach((val, key) => {
+        const opt = document.createElement("option");
+        opt.value = key;
+        opt.textContent = key;
+        studentSelect.appendChild(opt);
+      });
 
-    function filterTable() {
-      renderScores(currentScores);
+    } catch (err) {
+      console.error(err);
+      alert("❌ Failed to load students.");
     }
+  }
 
-    function downloadExcel() {
-      const table = document.getElementById("scoreTable");
-      if (table.style.display === "none") return alert("No scores to download.");
-      const wb = XLSX.utils.table_to_book(table, { sheet: "Scores" });
-      XLSX.writeFile(wb, "quiz-scores.xlsx");
-    }
+  function fetchScores() {
+    const selectedStudent = document.getElementById("studentSelect").value;
 
-    function goBack() {
-      window.location.href = "admin.html";
-    }
-  </script>
+    const tbody = document.querySelector("#scoreTable tbody");
+    tbody.innerHTML = "";
+
+    const filteredResponses = selectedStudent
+      ? allResponses.filter(r => `${r.name || "-"} - ${r.userCode || "-"}` === selectedStudent)
+      : allResponses;
+
+    filteredResponses.forEach(resp => {
+      let correct = 0;
+      resp.answers.forEach(ans => {
+        const q = allQuestions.find(q => q.question === ans.question);
+        if (q && q.correctAnswer === ans.selected) correct++;
+      });
+
+      const scorePercent = allQuestions.length
+        ? ((correct / allQuestions.length) * 100).toFixed(2)
+        : "N/A";
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${resp.name || "-"}</td>
+        <td>${resp.userCode || "-"}</td>
+        <td>${scorePercent}</td>
+      `;
+      tbody.appendChild(row);
+    });
+
+    document.getElementById("scoreTable").style.display = "table";
+  }
+
+  function downloadExcel() {
+    const table = document.getElementById("scoreTable");
+    if (table.style.display === "none") return alert("No scores to download.");
+    const wb = XLSX.utils.table_to_book(table, { sheet: "Scores" });
+    XLSX.writeFile(wb, "quiz-scores.xlsx");
+  }
+
+  function goBack() {
+    window.location.href = "admin.html";
+  }
+</script>
 
 </body>
 </html>
