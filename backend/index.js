@@ -14,6 +14,11 @@ app.use(express.json());
 const quizRoutes = require("./routes/quizRoutes");
 app.use("/api/quiz", quizRoutes);
 
+
+const userRoutes = require("./routes/userRoutes");
+app.use("/api/users", userRoutes);
+
+
 // MongoDB connection
 const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/quizdb";
 
