@@ -1,61 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Admin Dashboard - Quiz App</title>
+  <meta charset="UTF-8">
+  <title>Create / Edit Test</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f6f8;
-      padding: 40px;
-      color: #333;
-    }
-    h1 {
-      color: #444;
-    }
-    .button-group {
-      margin-top: 30px;
-    }
-    button {
-      padding: 12px 24px;
-      margin: 10px;
-      font-size: 16px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
+    body { font-family: Arial, sans-serif; padding: 30px; background: #f8f9fa; }
+    h1 { color: #333; }
+    label, select, input, textarea, button { margin: 8px 0; font-size: 16px; }
+    textarea { width: 100%; }
+    button { padding: 8px 16px; margin-right: 10px; }
+    .question-block { background: #fff; padding: 15px; margin: 10px 0; border-radius: 6px; border: 1px solid #ccc; }
+    #questionsContainer hr { margin: 20px 0; }
   </style>
 </head>
 <body>
 
-<script>
-  if (sessionStorage.getItem("role") !== "admin") {
-    alert("Access denied. Please login as admin.");
-    window.location.href = "index.html";
-  }
-</script>
+<h1>📝 Test Creator</h1>
 
-<h1>🛠 Admin Dashboard</h1>
-<p>Welcome to your control panel. Choose an action below:</p>
+<!-- Choose Action -->
+<label>Choose Action:</label>
+<select id="actionSelect" onchange="handleActionChange()">
+  <option value="">-- Select --</option>
+  <option value="create">➕ Create New Test</option>
+  <option value="edit">✏️ Edit Existing Test</option>
+</select>
 
-<div class="button-group">
-  <button onclick="location.href='form.html'">📝 Create / Edit Test</button>
-  <button onclick="location.href='view-responses.html'">👁 View Responses</button>
-  <button onclick="location.href='scores.html'">📊 View Scores</button>
-  <button onclick="logout()">🚪 Logout</button>
+<!-- Create New Test -->
+<div id="newTestDiv" style="display: none;">
+  <label>Enter New Test Name:</label>
+  <input type="text" id="newTestId" placeholder="e.g., history-class9">
 </div>
 
-<script>
-  function logout() {
-    sessionStorage.clear();
-    window.location.href = "index.html";
-  }
-</script>
+<!-- Edit Existing Test -->
+<div id="editTestDiv" style="display: none;">
+  <label>Select Test to Edit:</label>
+  <select id="editTestSelect">
+    <option>Loading...</option>
+  </select>
+</div>
 
+<br>
+<button onclick="loadQuestions()">📥 Load Test</button>
+<button onclick="addQuestion()">➕ Add Question</button>
+<button onclick="saveTest()">💾 Save Test</button>
+<button onclick="logout()">🚪 Logout</button>
+
+<div id="questionsContainer"></div>
+
+<script>
+const BASE_URL = "https://quiz-app-4087.onrender.com";
+let currentTestId = "";
+let questionCount = 0;
+
+function logout() {
+  sessionStorage.clear();
+  window.location.href = "index.html";
+}
+
+function handleActionChange() {
+  const action = document.getElementById("actionSelect").value;
+  document.getElementById("newTestDiv").style.display = action === "create" ? "block" : "none";
+  document.getElementById("editTestDiv").style.display = action === "edit" ? "block" : "none";
+}
+
+// Fetch existing test names
+window.onload = () => {
+  fetch(`${BASE_URL}/api/quiz/tests`)
+    .then(res => res.json())
+    .then(tests => {
+      const sel = document.getElementById("editTestSelect");
+      sel.innerHTML = `<option value="">-- Select Test --</option>`;
+      tests.forEach(test => {
+        const opt = document.createElement("option");
+        opt.value = test;
+        opt.textContent = test;
+        sel.appendChild(opt);
+      });
+    })
+    .catch(() => alert("❌ Failed to load test list."));
+};
+
+function loadQuestions() {
+  const action = document.getElementById("actionSelect").value;
+  if (action === "create") {
+    currentTestId = document.getElementById("newTestId").value.trim();
+    if (!currentTestId) return alert("Please enter test name.");
+    document.getElementById("questionsContainer").innerHTML = '';
+    questionCount = 0;
+  } else if (action === "edit") {
+    currentTestId = document.getElementById("editTestSelect").value;
+    if (!currentTestId) return alert("Please select a test to edit.");
+    fetch(`${BASE_URL}/api/quiz/test/${currentTestId}/questions`)
+      .then(res => res.json())
+      .then(questions => {
+        questionCount = 0;
+        const container = document.getElementById("questionsContainer");
+        container.innerHTML = '';
+        questions.forEach(q => {
+          addQuestion(q.question, q.options, q.correctAnswer);
+        });
+      })
+      .catch(err => {
+        console.error(err);
+        alert("❌ Failed to load questions.");
+      });
+  }
+}
+
+function addQuestion(qText = "", options = ["", "", "", ""], correct = "") {
+  questionCount++;
+  const container = document.getElementById("questionsContainer");
+
+  const div = document.createElement("div");
+  div.className = "question-block";
+  div.innerHTML = `
+    <h3>Q${questionCount}</h3>
+    <textarea class="questionText" rows="2">${qText}</textarea><br>
+    A: <input type="text" class="optionA" value="${options[0]}"><br>
+    B: <input type="text" class="optionB" value="${options[1]}"><br>
+    C: <input type="text" class="optionC" value="${options[2]}"><br>
+    D: <input type="text" class="optionD" value="${options[3]}"><br>
+    Correct Answer (A/B/C/D): <input type="text" class="correctAnswer" value="${["A","B","C","D"][options.indexOf(correct)] || ""}"><br>
+    <button onclick="this.parentElement.remove()">🗑 Delete</button>
+  `;
+  container.appendChild(div);
+}
+
+async function saveTest() {
+  if (!currentTestId) return alert("No test selected or created.");
+
+  const questions = [];
+  const texts = document.querySelectorAll(".questionText");
+  const as = document.querySelectorAll(".optionA");
+  const bs = document.querySelectorAll(".optionB");
+  const cs = document.querySelectorAll(".optionC");
+  const ds = document.querySelectorAll(".optionD");
+  const corrects = document.querySelectorAll(".correctAnswer");
+
+  for (let i = 0; i < texts.length; i++) {
+    const opts = [as[i].value.trim(), bs[i].value.trim(), cs[i].value.trim(), ds[i].value.trim()];
+    const correct = corrects[i].value.trim().toUpperCase();
+    const correctIndex = { A: 0, B: 1, C: 2, D: 3 }[correct];
+
+    if (correctIndex === undefined) {
+      return alert(`❌ Question ${i + 1} has invalid correct answer. Use A/B/C/D.`);
+    }
+
+    questions.push({
+      question: texts[i].value.trim(),
+      options: opts,
+      correctAnswer: opts[correctIndex]
+    });
+  }
+
+  try {
+    const res = await fetch(`${BASE_URL}/api/quiz/test/${currentTestId}/save`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(questions)
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert("✅ Test saved successfully!");
+    } else {
+      alert("❌ Save failed: " + data.error);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("⚠️ Server error while saving.");
+  }
+}
+</script>
 </body>
 </html>
