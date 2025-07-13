@@ -4,7 +4,7 @@
   <title>Create / Edit Test</title>
   <style>
     body { font-family: Arial; margin: 40px; }
-    textarea, input { width: 100%; padding: 10px; margin-bottom: 10px; font-size: 16px; }
+    textarea, input, select { width: 100%; padding: 10px; margin-bottom: 10px; font-size: 16px; }
     button { padding: 10px 20px; font-size: 16px; margin-right: 10px; }
     .question-block { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; position: relative; }
     .remove-btn {
@@ -24,14 +24,19 @@
     }
   </script>
 
-  <h2>📝 Create or Edit a Test</h2>
+  <h2>🛠 Create or Edit Test</h2>
 
-  <label for="testNameInput">Enter Test Name:</label>
-  <input type="text" id="testNameInput" oninput="checkTestName()" placeholder="e.g., Demo-01" />
+  <label>Select Existing Test:</label>
+  <select id="testSelect" onchange="onTestSelect(this.value)">
+    <option value="">-- Select Test --</option>
+  </select>
+
+  <label>Or Enter New Test Name:</label>
+  <input type="text" id="testNameInput" oninput="onManualTestName()" placeholder="e.g. Demo-01" />
 
   <div id="questionsArea"></div>
 
-  <div id="questionButtons" style="display: none;">
+  <div id="questionButtons" style="display:none;">
     <button onclick="addQuestion()">➕ Add Question</button>
     <button onclick="saveTest()">💾 Save Test</button>
     <button onclick="goBack()">🔙 Back to Admin</button>
@@ -41,15 +46,37 @@
     const BASE = "https://quiz-app-4087.onrender.com/api/quiz";
     let currentTestId = "";
 
-    function checkTestName() {
-      const input = document.getElementById("testNameInput").value.trim();
-      const controls = document.getElementById("questionButtons");
-      if (input) {
-        controls.style.display = "block";
-        currentTestId = input;
-        loadQuestions(input);
+    window.onload = () => {
+      fetch(`${BASE}/tests`)
+        .then(res => res.json())
+        .then(tests => {
+          const select = document.getElementById("testSelect");
+          tests.forEach(test => {
+            const opt = document.createElement("option");
+            opt.value = test;
+            opt.textContent = test;
+            select.appendChild(opt);
+          });
+        });
+    };
+
+    function onTestSelect(testId) {
+      if (!testId) return;
+      document.getElementById("testNameInput").value = testId;
+      currentTestId = testId;
+      document.getElementById("questionButtons").style.display = "block";
+      loadQuestions(testId);
+    }
+
+    function onManualTestName() {
+      const testId = document.getElementById("testNameInput").value.trim();
+      if (testId) {
+        currentTestId = testId;
+        document.getElementById("questionButtons").style.display = "block";
+        document.getElementById("testSelect").value = ""; // Clear dropdown
+        loadQuestions(testId); // try loading if already exists
       } else {
-        controls.style.display = "none";
+        document.getElementById("questionButtons").style.display = "none";
         currentTestId = "";
         document.getElementById("questionsArea").innerHTML = "";
       }
@@ -64,6 +91,7 @@
           data.forEach(q => addQuestion(q));
         })
         .catch(() => {
+          // Assume new test, clear questions
           document.getElementById("questionsArea").innerHTML = "";
         });
     }
@@ -90,7 +118,7 @@
     }
 
     function saveTest() {
-      if (!currentTestId) return alert("No test loaded.");
+      if (!currentTestId) return alert("Please enter or select a test name first.");
 
       const texts = document.querySelectorAll(".questionText");
       const as = document.querySelectorAll(".optionA");
@@ -105,11 +133,7 @@
         const c = corr[i].value.trim().toUpperCase();
         const idx = { A: 0, B: 1, C: 2, D: 3 }[c];
         if (idx === undefined) return alert(`Invalid correct answer at Q${i + 1}`);
-        arr.push({
-          question: texts[i].value.trim(),
-          options: ops,
-          correctAnswer: ops[idx]
-        });
+        arr.push({ question: texts[i].value.trim(), options: ops, correctAnswer: ops[idx] });
       }
 
       fetch(`${BASE}/test/${currentTestId}/save`, {
@@ -118,11 +142,8 @@
         body: JSON.stringify(arr)
       })
         .then(res => res.json().then(data => {
-          if (res.ok) {
-            alert("✅ Test saved successfully.");
-          } else {
-            alert("❌ Save failed: " + data.error);
-          }
+          if (res.ok) alert("✅ Test saved.");
+          else alert("❌ Failed: " + data.error);
         }))
         .catch(() => alert("❌ Server error while saving test."));
     }
