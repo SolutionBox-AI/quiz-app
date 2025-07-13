@@ -1,1 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Register</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+    }
+    input, select, button {
+      display: block;
+      margin: 10px 0;
+      padding: 10px;
+      font-size: 16px;
+    }
+    label {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>📝 Register New User</h2>
+
+  <label for="name">Full Name:</label>
+  <input type="text" id="name" placeholder="Enter full name" required />
+
+  <label for="userCode">User Code (unique ID):</label>
+  <input type="text" id="userCode" placeholder="e.g., A123, S456" required />
+
+  <label for="password">Password:</label>
+  <input type="password" id="password" placeholder="Choose a password" required />
+
+  <label for="role">Role:</label>
+  <select id="role">
+    <option value="student">Student</option>
+    <option value="admin">Admin</option>
+  </select>
+
+  <button onclick="register()">✅ Register</button>
+  <button onclick="goToLogin()">🔙 Go to Login</button>
+
+  <p id="status"></p>
+
+  <script>
+    const BASE = "https://quiz-app-4087.onrender.com/api/users";
+
+    async function register() {
+      const name = document.getElementById("name").value.trim();
+      const userCode = document.getElementById("userCode").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const role = document.getElementById("role").value;
+
+      if (!name || !userCode || !password) {
+        document.getElementById("status").textContent = "❌ All fields are required.";
+        return;
+      }
+
+      try {
+        const res = await fetch(`${BASE}/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, userCode, password, role })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          document.getElementById("status").textContent = "✅ Registered successfully. Please login.";
+        } else {
+          document.getElementById("status").textContent = "❌ " + data.error;
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById("status").textContent = "⚠️ Server error.";
+      }
+    }
+
+    function goToLogin() {
+      window.location.href = "index.html";
+    }
+  </script>
+</body>
+</html>
 
