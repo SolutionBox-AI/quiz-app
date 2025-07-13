@@ -1,130 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <title>Take Quiz</title>
   <style>
-    body { font-family: Arial; padding: 30px; background: #f9f9f9; }
-    input, select, button { font-size: 16px; padding: 6px; margin: 6px 0; }
-    h1 { color: #444; }
-    .question { margin-bottom: 20px; padding: 10px; background: #fff; border-radius: 6px; box-shadow: 0 0 5px #ccc; }
+    body { font-family: Arial, sans-serif; padding: 30px; background: #f4f6f9; }
+    input, select, button { padding: 10px; font-size: 16px; margin: 10px 0; width: 100%; max-width: 400px; }
+    .question { margin-top: 20px; padding: 15px; background: #fff; border: 1px solid #ccc; border-radius: 6px; }
   </style>
 </head>
 <body>
-  <h1>📝 Start Your Quiz</h1>
 
-  <label>User Code:</label><br>
-  <input type="text" id="userCode" placeholder="e.g., STU123"><br>
+  <h2>🧠 Start Your Quiz</h2>
 
-  <label>Your Name:</label><br>
-  <input type="text" id="name" placeholder="Enter your name"><br>
+  <label>Enter Your Name:</label>
+  <input type="text" id="name" placeholder="Your Name"/>
 
-  <label>Select Test:</label><br>
-  <select id="testSelect">
-    <option value="">--Select Test--</option>
-  </select><br>
+  <label>Enter Your User Code:</label>
+  <input type="text" id="userCode" placeholder="e.g. Roll No / ID"/>
+
+  <label>Select Test:</label>
+  <select id="testSelect"><option>Loading...</option></select>
 
   <div id="quizContainer" style="display: none;"></div>
 
   <button id="submitBtn" onclick="submitQuiz()" style="display: none;">🚀 Submit Quiz</button>
 
   <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com";
+    const BASE = "https://quiz-app-4087.onrender.com/api/quiz";
 
-    async function loadTestList() {
-      try {
-        const res = await fetch(`${BASE_URL}/tests`);
-        const tests = await res.json();
-        const select = document.getElementById("testSelect");
-        tests.forEach(test => {
-          const option = document.createElement("option");
-          option.value = test;
-          option.textContent = test;
-          select.appendChild(option);
-        });
-      } catch (err) {
-        alert("❌ Failed to load test list.");
-        console.error(err);
-      }
+    async function loadTests() {
+      const res = await fetch(`${BASE}/tests`);
+      const tests = await res.json();
+      const sel = document.getElementById("testSelect");
+      sel.innerHTML = '<option value="">-- Select Test --</option>';
+      tests.forEach(t => sel.appendChild(new Option(t, t)));
     }
 
     async function loadQuestions(testId) {
-      try {
-        const res = await fetch(`${BASE_URL}/test/${testId}/questions`);
-        const questions = await res.json();
+      const res = await fetch(`${BASE}/test/${testId}/questions`);
+      const questions = await res.json();
 
-        const container = document.getElementById("quizContainer");
-        container.innerHTML = "";
-        questions.forEach((q, index) => {
-          const div = document.createElement("div");
-          div.className = "question";
+      const cont = document.getElementById("quizContainer");
+      cont.innerHTML = "";
+      questions.forEach((q, i) => {
+        const div = document.createElement("div");
+        div.className = "question";
+        div.innerHTML = `<strong>Q${i + 1}:</strong> ${q.question}<br>` +
+          q.options.map((opt, idx) =>
+            `<label><input type="radio" name="q${i}" value="${opt}"> ${String.fromCharCode(65 + idx)}. ${opt}</label><br>`
+          ).join("");
+        cont.appendChild(div);
+      });
 
-          let optionsHtml = "";
-          q.options.forEach((option, i) => {
-            const label = String.fromCharCode(65 + i);
-            optionsHtml += `
-              <label>
-                <input type="radio" name="q${index}" value="${option}"> ${label}. ${option}
-              </label><br>`;
-          });
-
-          div.innerHTML = `<h3>Q${index + 1}: ${q.question}</h3>${optionsHtml}`;
-          container.appendChild(div);
-        });
-
-        container.dataset.questions = JSON.stringify(questions);
-        container.style.display = "block";
-        document.getElementById("submitBtn").style.display = "inline-block";
-      } catch (err) {
-        alert("❌ Failed to load questions.");
-        console.error(err);
-      }
+      cont.dataset.questions = JSON.stringify(questions);
+      cont.style.display = "block";
+      document.getElementById("submitBtn").style.display = "block";
     }
+
+    document.getElementById("testSelect").addEventListener("change", e => {
+      const id = e.target.value;
+      if (id) loadQuestions(id);
+    });
 
     async function submitQuiz() {
       const name = document.getElementById("name").value.trim();
       const userCode = document.getElementById("userCode").value.trim();
       const testId = document.getElementById("testSelect").value;
-      const questions = JSON.parse(document.getElementById("quizContainer").dataset.questions);
+      const questions = JSON.parse(document.getElementById("quizContainer").dataset.questions || "[]");
 
-      if (!name || !userCode || !testId || questions.length === 0) {
-        alert("Please fill all details and select a test.");
-        return;
-      }
+      if (!name || !userCode || !testId) return alert("Please fill all fields.");
+      if (!questions.length) return alert("No questions loaded.");
 
-      const answers = questions.map((q, index) => {
-        const selected = document.querySelector(`input[name="q${index}"]:checked`);
-        return {
-          question: q.question,
-          selected: selected ? selected.value : null
-        };
+      const answers = questions.map((q, i) => {
+        const selected = document.querySelector(`input[name="q${i}"]:checked`);
+        return { question: q.question, selected: selected?.value || "" };
       });
 
-      try {
-        const res = await fetch(`${BASE_URL}/test/${testId}/submit`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, userCode, answers })
-        });
+      const res = await fetch(`${BASE}/test/${testId}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, userCode, answers })
+      });
 
-        const result = await res.json();
-        if (res.ok) {
-          alert("✅ Quiz submitted successfully!");
-          window.location.href = "index.html"; // redirect to login/home
-        } else {
-          alert("❌ Submission failed: " + result.error);
-        }
-      } catch (err) {
-        alert("⚠️ Server error while submitting.");
-        console.error(err);
+      const data = await res.json();
+      if (res.ok) {
+        alert("✅ Quiz submitted successfully.");
+        window.location.href = "index.html";
+      } else {
+        alert("❌ Submission failed: " + data.error);
       }
     }
 
-    document.getElementById("testSelect").addEventListener("change", e => {
-      if (e.target.value) loadQuestions(e.target.value);
-    });
-
-    loadTestList();
+    loadTests();
   </script>
 </body>
 </html>
