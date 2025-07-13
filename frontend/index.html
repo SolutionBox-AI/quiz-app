@@ -1,74 +1,78 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Login - Quiz App</title>
+  <meta charset="UTF-8" />
+  <title>Login</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 60px;
+      margin: 40px;
     }
-    input, select, button {
-      font-size: 16px;
-      padding: 10px;
-      margin: 8px 0;
-      width: 300px;
+    input, button {
       display: block;
+      margin: 10px 0;
+      padding: 10px;
+      font-size: 16px;
+    }
+    label {
+      margin-top: 15px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <h2>🔐 Login to Quiz App</h2>
+  <h2>🔐 User Login</h2>
 
-  <label for="email">Email:</label>
-  <input type="email" id="email" placeholder="Enter email" required />
+  <label for="userCode">User Code:</label>
+  <input type="text" id="userCode" placeholder="Enter your User Code" required />
 
   <label for="password">Password:</label>
-  <input type="password" id="password" placeholder="Enter password" required />
+  <input type="password" id="password" placeholder="Enter your password" required />
 
-  <button onclick="login()">Login</button>
-  <button onclick="window.location.href='register.html'">Register</button>
+  <button onclick="login()">🔓 Login</button>
+  <button onclick="window.location.href='register.html'">📝 Register</button>
+
+  <p id="status"></p>
 
   <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com";
+    const BASE = "https://quiz-app-4087.onrender.com/api/users";
 
     async function login() {
-      const email = document.getElementById("email").value.trim();
+      const userCode = document.getElementById("userCode").value.trim();
       const password = document.getElementById("password").value.trim();
 
-      if (!email || !password) {
-        alert("Please fill all fields.");
+      if (!userCode || !password) {
+        document.getElementById("status").textContent = "❌ Both fields are required.";
         return;
       }
 
       try {
-        const res = await fetch(`${BASE_URL}/api/users/login`, {
+        const res = await fetch(`${BASE}/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ userCode, password })
         });
 
         const data = await res.json();
 
-        if (!res.ok) {
-          return alert("❌ " + (data.error || "Login failed"));
-        }
+        if (res.ok) {
+          // Store session
+          sessionStorage.setItem("role", data.role);
+          sessionStorage.setItem("userCode", data.userCode);
+          sessionStorage.setItem("name", data.name);
 
-        // Save user info to sessionStorage
-        sessionStorage.setItem("userId", data.user._id);
-        sessionStorage.setItem("name", data.user.name);
-        sessionStorage.setItem("email", data.user.email);
-        sessionStorage.setItem("role", data.user.role);
-
-        // Redirect based on role
-        if (data.user.role === "admin") {
-          window.location.href = "admin.html";
+          // Redirect based on role
+          if (data.role === "admin") {
+            window.location.href = "admin.html";
+          } else {
+            window.location.href = "quiz.html";
+          }
         } else {
-          window.location.href = "quiz.html";
+          document.getElementById("status").textContent = "❌ " + data.error;
         }
-
       } catch (err) {
         console.error(err);
-        alert("Server error during login.");
+        document.getElementById("status").textContent = "⚠️ Server error.";
       }
     }
   </script>
