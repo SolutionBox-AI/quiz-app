@@ -1,17 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>📊 Quiz Scores</title>
+  <title>View Scores</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial; margin: 40px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #f2f2f2; }
-    button { margin: 5px; padding: 8px 16px; font-size: 16px; }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 20px;
+    }
+    th, td {
+      padding: 10px; border: 1px solid #ccc; text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    select, button, input {
+      padding: 8px 12px; font-size: 16px; margin-right: 10px;
+    }
   </style>
 </head>
 <body>
+
   <script>
     if (sessionStorage.getItem("role") !== "admin") {
       alert("Access denied. Please login as admin.");
@@ -19,26 +28,26 @@
     }
   </script>
 
-  <h2>📊 Quiz Scores</h2>
+  <h2>📈 View Student Scores</h2>
 
-  <label>Select Test:</label>
+  <label for="testSelect">Select Test:</label>
   <select id="testSelect">
-    <option value="">-- Loading tests --</option>
+    <option value="">--Loading Tests--</option>
   </select>
 
-  <button onclick="loadScores()">View Scores</button>
-  <button onclick="downloadCSV()">📄 Download CSV</button>
-//  <button onclick="window.print()">🖨 Print</button>
-  <button onclick="goBack()">⬅ Back to Admin</button>
+  <label for="studentFilter">Filter by Name/User Code:</label>
+  <input type="text" id="studentFilter" oninput="filterTable()" placeholder="Start typing..." />
+
+  <button onclick="fetchScores()">👁 View Scores</button>
+  <button onclick="downloadExcel()">📄 Download Excel</button>
+  <button onclick="goBack()">🔙 Back to Admin</button>
 
   <table id="scoreTable" style="display:none;">
     <thead>
       <tr>
-        <th>Student Name</th>
+        <th>Name</th>
         <th>User Code</th>
-        <th>Score</th>
-        <th>Total</th>
-        <th>Submitted At</th>
+        <th>Score (%)</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -52,7 +61,7 @@
         .then(res => res.json())
         .then(tests => {
           const select = document.getElementById("testSelect");
-          select.innerHTML = '<option value="">-- Select Test --</option>';
+          select.innerHTML = '<option value="">--Select Test--</option>';
           tests.forEach(test => {
             const opt = document.createElement("option");
             opt.value = test;
@@ -66,57 +75,71 @@
         });
     };
 
-    function loadScores() {
+    async function fetchScores() {
       const testId = document.getElementById("testSelect").value;
       if (!testId) return alert("Please select a test.");
 
-      fetch(`${BASE_URL}/api/quiz/test/${testId}/scores`)
-        .then(res => res.json())
-        .then(scores => {
-          const table = document.getElementById("scoreTable");
-          const tbody = table.querySelector("tbody");
-          tbody.innerHTML = "";
-          scores.forEach(s => {
-            const row = `<tr>
-              <td>${s.name}</td>
-              <td>${s.userCode || ""}</td>
-              <td>${s.score}</td>
-              <td>${s.total}</td>
-              <td>${new Date(s.submittedAt).toLocaleString()}</td>
-            </tr>`;
-            tbody.innerHTML += row;
+      try {
+        const [resQ, resR] = await Promise.all([
+          fetch(`${BASE_URL}/api/quiz/test/${testId}/questions`),
+          fetch(`${BASE_URL}/api/quiz/test/${testId}/responses`)
+        ]);
+
+        const questions = await resQ.json();
+        const responses = await resR.json();
+
+        const tbody = document.querySelector("#scoreTable tbody");
+        tbody.innerHTML = "";
+
+        responses.forEach(resp => {
+          let correct = 0;
+          resp.answers.forEach(ans => {
+            const q = questions.find(q => q.question === ans.question);
+            if (q && q.correctAnswer === ans.selected) correct++;
           });
-          table.style.display = "table";
-        })
-        .catch(err => {
-          console.error(err);
-          alert("❌ Failed to load scores.");
+
+          const scorePercent = questions.length
+            ? ((correct / questions.length) * 100).toFixed(2)
+            : "N/A";
+
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${resp.name || "-"}</td>
+            <td>${resp.userCode || "-"}</td>
+            <td>${scorePercent}</td>
+          `;
+          tbody.appendChild(row);
         });
+
+        document.getElementById("scoreTable").style.display = "table";
+      } catch (err) {
+        console.error(err);
+        alert("❌ Failed to load scores.");
+      }
     }
 
-    function downloadCSV() {
-      const rows = [["Student Name", "User Code", "Score", "Total", "Submitted At"]];
-      const tableRows = document.querySelectorAll("#scoreTable tbody tr");
+    function filterTable() {
+      const filter = document.getElementById("studentFilter").value.toLowerCase();
+      const rows = document.querySelectorAll("#scoreTable tbody tr");
 
-      tableRows.forEach(row => {
-        const cells = Array.from(row.querySelectorAll("td")).map(td => td.textContent);
-        rows.push(cells);
+      rows.forEach(row => {
+        const name = row.cells[0].textContent.toLowerCase();
+        const code = row.cells[1].textContent.toLowerCase();
+        row.style.display = (name.includes(filter) || code.includes(filter)) ? "" : "none";
       });
+    }
 
-      const csvContent = rows.map(e => e.join(",")).join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "scores.csv";
-      a.click();
-      URL.revokeObjectURL(url);
+    function downloadExcel() {
+      const table = document.getElementById("scoreTable");
+      if (table.style.display === "none") return alert("No scores to download.");
+      const wb = XLSX.utils.table_to_book(table, { sheet: "Scores" });
+      XLSX.writeFile(wb, "quiz-scores.xlsx");
     }
 
     function goBack() {
       window.location.href = "admin.html";
     }
   </script>
+
 </body>
 </html>
