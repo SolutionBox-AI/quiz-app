@@ -1,63 +1,94 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../models/User");
+const Question = require("../models/Question");
+const Response = require("../models/Response");
+const Mapping = require("../models/Mapping");
 
-// Register a new user (admin or student)
-router.post("/register", async (req, res) => {
-  const { name, email, password, role, adminId } = req.body;
+// ✅ Get all test IDs (Admin only)
+router.get("/tests", async (req, res) => {
+  try {
+    const testIds = await Question.distinct("testId");
+    res.json(testIds);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch test list" });
+  }
+});
 
-  if (!name || !email || !password || !role) {
-    return res.status(400).json({ error: "All fields are required." });
+// ✅ Get questions for a test
+router.get("/test/:testId/questions", async (req, res) => {
+  try {
+    const questions = await Question.find({ testId: req.params.testId });
+    res.json(questions);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch questions" });
+  }
+});
+
+// ✅ Save questions for a test (admin)
+router.post("/test/:testId/save", async (req, res) => {
+  const testId = req.params.testId;
+  const raw = req.body;
+  const questions = Array.isArray(raw) ? raw : raw.questions;
+
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return res.status(400).json({ error: "Invalid questions data" });
   }
 
   try {
-    const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ error: "Email already registered." });
+    await Question.deleteMany({ testId });
+    await Question.insertMany(questions.map(q => ({ ...q, testId })));
+    res.json({ message: "Test saved successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to save test" });
+  }
+});
 
-    const newUser = new User({ name, email, password, role });
+// ✅ Submit student response
+router.post("/test/:testId/submit", async (req, res) => {
+  const { testId } = req.params;
+  const { name, userCode, answers } = req.body;
 
-    if (role === "student" && adminId) {
-      newUser.adminId = adminId;
-      // Link student to admin
-      await User.findByIdAndUpdate(adminId, { $push: { linkedStudents: newUser._id } });
-    }
+  if (!name || !userCode || !Array.isArray(answers)) {
+    return res.status(400).json({ error: 'Invalid data' });
+  }
 
-    await newUser.save();
-    res.status(201).json({ message: "User registered successfully", user: newUser });
+  try {
+    const saved = await Response.create({ testId, name, userCode, answers });
+    res.status(200).json({ message: "Response saved", data: saved });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to save response" });
+  }
+});
+
+// ✅ Get all responses for a test (admin)
+router.get("/test/:testId/responses", async (req, res) => {
+  try {
+    const responses = await Response.find({ testId: req.params.testId });
+    res.json(responses);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch responses" });
+  }
+});
+
+// ✅ NEW: Get test list for a particular student (based on teacher-student mapping)
+router.get("/test-list-for-student", async (req, res) => {
+  const { name, userCode } = req.query;
+
+  if (!name || !userCode) {
+    return res.status(400).json({ error: "Name and userCode are required" });
+  }
+
+  try {
+    const mappings = await Mapping.find({ studentName: name, studentCode: userCode });
+
+    const allowedAdmins = mappings.map(m => m.adminEmail);
+
+    const tests = await Question.distinct("testId", { createdBy: { $in: allowedAdmins } });
+
+    res.json(tests);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Registration failed" });
-  }
-});
-
-// Login route
-router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    const user = await User.findOne({ email, password }); // Note: In production, use hashed passwords
-    if (!user) return res.status(401).json({ error: "Invalid credentials" });
-
-    res.json({
-      message: "Login successful",
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (err) {
-    res.status(500).json({ error: "Login failed" });
-  }
-});
-
-// Get students for a specific admin
-router.get("/admin/:adminId/students", async (req, res) => {
-  try {
-    const students = await User.find({ adminId: req.params.adminId, role: "student" });
-    res.json(students);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch students" });
+    res.status(500).json({ error: "Failed to fetch tests for student" });
   }
 });
 
