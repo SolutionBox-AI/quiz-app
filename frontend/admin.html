@@ -1,44 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <title>Admin Dashboard – Quiz App</title>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 40px; background: #f4f6f9; }
-    h1 { color: #333; }
-    .button-group { margin-top: 30px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 30px;
+    }
+
     button {
-      padding: 12px 24px; margin: 8px;
-      font-size: 16px; background: #007bff;
-      color: white; border: none; border-radius: 5px;
+      padding: 12px 20px;
+      margin: 10px;
+      font-size: 16px;
       cursor: pointer;
     }
-    button:hover { background: #0056b3; }
+
+    .email {
+      font-weight: bold;
+      color: green;
+    }
   </style>
 </head>
 <body>
+
   <script>
-    if (sessionStorage.getItem("role") !== "admin") {
-      alert("Access denied. Please log in as admin.");
+    const role = sessionStorage.getItem("role");
+    const email = sessionStorage.getItem("email");
+    const name = sessionStorage.getItem("name");
+
+    if (role !== "admin") {
+      alert("Access denied. Please login as admin.");
       window.location.href = "index.html";
     }
   </script>
 
-  <h1>🛠 Admin Dashboard</h1>
-  <p>Select what you’d like to do today:</p>
+  <h2>👨‍🏫 Welcome to Admin Dashboard</h2>
+  <p class="email">Logged in as: <span id="adminEmail"></span></p>
 
-  <div class="button-group">
-    <button onclick="location.href='form.html'">📝 Create / Edit Test</button>
-    <button onclick="location.href='view-responses.html'">👁 View Responses</button>
-    <button onclick="location.href='scores.html'">📊 View Scores</button>
-    <button onclick="logout()">🚪 Logout</button>
-  </div>
+  <button onclick="window.location.href='form.html'">📝 Create/Edit Test</button>
+  <button onclick="window.location.href='response.html'">👁 View Responses</button>
+  <button onclick="window.location.href='score.html'">📊 View Scores</button>
+  <button onclick="window.location.href='upload-mapping.html'">📁 Upload Student Mapping</button>
+  <button onclick="logout()">🚪 Logout</button>
 
   <script>
+    document.getElementById("adminEmail").textContent = sessionStorage.getItem("email");
+
     function logout() {
       sessionStorage.clear();
       window.location.href = "index.html";
     }
   </script>
+
 </body>
 </html>
