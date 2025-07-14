@@ -41,11 +41,12 @@ router.post("/upload", upload.single("mapping"), async (req, res) => {
 // 🔍 Get all mappings (for admin view)
 router.get("/all", async (req, res) => {
   try {
-    const data = await Mapping.find({});
-    res.json(data);
+    const allMappings = await Mapping.find();
+    res.json(allMappings);
   } catch (err) {
-    res.status(500).json({ error: "❌ Failed to fetch mappings" });
+    res.status(500).json({ error: "Failed to fetch mappings" });
   }
 });
+
 
 module.exports = router;
