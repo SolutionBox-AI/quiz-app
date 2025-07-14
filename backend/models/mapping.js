@@ -2,11 +2,11 @@
 const mongoose = require("mongoose");
 
 const mappingSchema = new mongoose.Schema({
-  adminCode: String,
+  adminEmail: String,
+  studentName: String,
   studentCode: String,
-  adminName: String,
-  studentName: String
 });
 
 module.exports = mongoose.model("Mapping", mappingSchema);
+
 
