@@ -1,31 +1,22 @@
-// routes/quizRoutes.js
 const express = require("express");
 const router = express.Router();
 const Question = require("../models/Question");
 const Response = require("../models/Response");
 const Mapping = require("../models/Mapping");
 
-// ✅ Get all test IDs (for admin use if needed)
+// 🔍 Get test list (admin filtered)
 router.get("/tests", async (req, res) => {
+  const { teacherEmail } = req.query;
   try {
-    const testIds = await Question.distinct("testId");
+    const filter = teacherEmail ? { teacherEmail } : {};
+    const testIds = await Question.find(filter).distinct("testId");
     res.json(testIds);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch test list" });
   }
 });
 
-// ✅ Get questions for a test
-router.get("/test/:testId/questions", async (req, res) => {
-  try {
-    const questions = await Question.find({ testId: req.params.testId });
-    res.json(questions);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch questions" });
-  }
-});
-
-// ✅ Save questions for a test (admin)
+// 📥 Save questions for a test (admin only)
 router.post("/test/:testId/save", async (req, res) => {
   const testId = req.params.testId;
   const raw = req.body;
@@ -37,14 +28,30 @@ router.post("/test/:testId/save", async (req, res) => {
 
   try {
     await Question.deleteMany({ testId });
-    await Question.insertMany(questions.map(q => ({ ...q, testId })));
+    await Question.insertMany(
+      questions.map(q => ({
+        ...q,
+        testId,
+        teacherEmail: q.teacherEmail || "", // ensure teacherEmail is saved
+      }))
+    );
     res.json({ message: "Test saved successfully" });
   } catch (err) {
     res.status(500).json({ error: "Failed to save test" });
   }
 });
 
-// ✅ Submit student response
+// 📤 Get questions for a test
+router.get("/test/:testId/questions", async (req, res) => {
+  try {
+    const questions = await Question.find({ testId: req.params.testId });
+    res.json(questions);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch questions" });
+  }
+});
+
+// 🧾 Submit student response
 router.post("/test/:testId/submit", async (req, res) => {
   const { testId } = req.params;
   const { name, userCode, answers } = req.body;
@@ -61,7 +68,7 @@ router.post("/test/:testId/submit", async (req, res) => {
   }
 });
 
-// ✅ Get responses for a test (admin)
+// 📊 Get responses for a test (admin)
 router.get("/test/:testId/responses", async (req, res) => {
   try {
     const responses = await Response.find({ testId: req.params.testId });
@@ -71,7 +78,7 @@ router.get("/test/:testId/responses", async (req, res) => {
   }
 });
 
-// ✅ Get test list for student based on admin-student mapping
+// 🧠 Get test list for a student based on admin-student mapping
 router.get("/test-list-for-student", async (req, res) => {
   const { name, userCode } = req.query;
 
@@ -84,11 +91,10 @@ router.get("/test-list-for-student", async (req, res) => {
 
     const allowedAdmins = mappings.map(m => m.adminEmail);
 
-    const tests = await Question.distinct("testId", { createdBy: { $in: allowedAdmins } });
+    const tests = await Question.distinct("testId", { teacherEmail: { $in: allowedAdmins } });
 
     res.json(tests);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Failed to fetch tests for student" });
   }
 });
