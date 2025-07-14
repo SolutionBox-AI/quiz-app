@@ -22,15 +22,15 @@ app.get("/", (req, res) => {
 });
 
 // Connect to MongoDB
-const MONGO_URL = process.env.MONGO_URL;
+const MONGO_URI = process.env.MONGO_URI;
 const PORT = process.env.PORT || 10000;
 
-if (!MONGO_URL) {
+if (!MONGO_URI) {
   console.error("❌ MONGO_URL not found in environment variables.");
   process.exit(1);
 }
 
-mongoose.connect(MONGO_URL, {
+mongoose.connect(MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
