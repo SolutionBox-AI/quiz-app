@@ -1,50 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Upload Mapping</title>
+  <meta charset="UTF-8" />
+  <title>Upload Student-Admin Mapping</title>
   <style>
-    body { font-family: Arial; padding: 30px; }
-    input[type="file"] { margin: 20px 0; }
+    body { font-family: Arial, sans-serif; padding: 40px; }
+    h2 { margin-bottom: 20px; }
+    input[type="file"], button {
+      padding: 10px; font-size: 16px; margin-top: 10px;
+    }
   </style>
 </head>
 <body>
-  <script>
-    if (sessionStorage.getItem("role") !== "admin") {
-      alert("Only admins can access this page.");
-      location.href = "index.html";
-    }
-  </script>
 
-  <h2>📤 Upload Student–Admin Mapping</h2>
-  <input type="file" id="mappingFile" accept=".csv" />
-  <button onclick="uploadMapping()">Upload</button>
-  <p id="status"></p>
+  <h2>📁 Upload Student-Admin Mapping CSV</h2>
+
+  <input type="file" id="csvFile" accept=".csv" />
+  <br><br>
+  <button onclick="uploadCSV()">🚀 Upload</button>
+
+  <p id="statusMsg"></p>
 
   <script>
-    const BASE = "https://quiz-app-backend.onrender.com"; // change to your backend
+    const BASE_URL = "https://quiz-app-4087.onrender.com"; // Replace if different
 
-    async function uploadMapping() {
-      const fileInput = document.getElementById("mappingFile");
+    async function uploadCSV() {
+      const fileInput = document.getElementById("csvFile");
       const file = fileInput.files[0];
-      if (!file || file.type !== "text/csv") {
-        alert("Please upload a valid CSV file.");
+      const statusMsg = document.getElementById("statusMsg");
+
+      if (!file) {
+        statusMsg.textContent = "❌ Please select a CSV file.";
         return;
       }
 
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("mapping", file);
 
       try {
-        const res = await fetch(`${BASE}/api/mapping/upload`, {
+        const res = await fetch(`${BASE_URL}/api/mapping/upload`, {
           method: "POST",
           body: formData
         });
+
         const data = await res.json();
-        document.getElementById("status").innerText = data.message || data.error;
+
+        if (res.ok) {
+          statusMsg.textContent = "✅ Mapping uploaded successfully!";
+        } else {
+          statusMsg.textContent = "❌ Upload failed: " + data.error;
+        }
       } catch (err) {
-        document.getElementById("status").innerText = "Upload failed.";
+        console.error(err);
+        statusMsg.textContent = "⚠️ Error uploading CSV.";
       }
     }
   </script>
+
 </body>
 </html>
