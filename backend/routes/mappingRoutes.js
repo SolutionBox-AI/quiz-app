@@ -1,4 +1,3 @@
-// routes/mappingRoutes.js
 const express = require("express");
 const multer = require("multer");
 const csv = require("csv-parser");
@@ -8,53 +7,60 @@ const Mapping = require("../models/Mapping");
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
-// 🔁 Upload CSV and save admin-student mapping
 router.post("/upload", upload.single("mapping"), async (req, res) => {
   const results = [];
 
-  const filePath = req.file.path;
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: "❌ No file uploaded." });
+  }
 
-  fs.createReadStream(filePath)
+  fs.createReadStream(req.file.path)
     .pipe(csv())
-    .on("data", (data) => {
-      console.log("Raw Row ➜", data); // 👈 log each row to debug
+    .on("data", (row) => {
+      console.log("Raw Row ➜", row);
+      const { adminEmail, studentName, studentCode } = row;
 
-      // Normalize keys to prevent BOM or whitespace issues
-      const cleaned = {};
-      for (const key in data) {
-        const cleanKey = key.trim().replace(/\uFEFF/g, ""); // remove BOM
-        cleaned[cleanKey] = data[key].trim();
-      }
-
-      if (cleaned.adminEmail && cleaned.studentName && cleaned.studentCode) {
+      if (adminEmail && studentName && studentCode) {
         results.push({
-          adminEmail: cleaned.adminEmail,
-          studentName: cleaned.studentName,
-          studentCode: cleaned.studentCode,
+          adminEmail: adminEmail.trim(),
+          studentName: studentName.trim(),
+          studentCode: studentCode.trim()
         });
       }
     })
     .on("end", async () => {
-      try {
-        if (results.length === 0) {
-          console.log("❌ No valid rows found in CSV.");
-          return res
-            .status(400)
-            .json({ success: false, message: "CSV parsed but no valid data" });
-        }
+      fs.unlinkSync(req.file.path); // Clean temp file
 
-        await Mapping.deleteMany({});
-        await Mapping.insertMany(results);
-        fs.unlinkSync(filePath);
+      if (results.length === 0) {
+        return res.status(400).json({ success: false, message: "❌ CSV parsed but no valid data." });
+      }
+
+      try {
+        console.log("📥 Inserting data into DB:", results);
+
+        const inserted = await Mapping.insertMany(results);
+        console.log("✅ Mappings inserted:", inserted);
+
         res.json({ success: true, message: "✅ Mapping uploaded successfully!" });
       } catch (err) {
-        console.error("❌ Error saving mappings:", err);
-        res.status(500).json({
-          success: false,
-          message: "❌ Error saving mappings to database.",
-        });
+        console.error("❌ Error inserting into DB:", err);
+        res.status(500).json({ success: false, message: "❌ Error saving mappings to DB." });
       }
+    })
+    .on("error", (err) => {
+      console.error("❌ CSV parsing error:", err);
+      res.status(500).json({ success: false, message: "❌ Error parsing CSV." });
     });
+});
+
+router.get("/all", async (req, res) => {
+  try {
+    const mappings = await Mapping.find();
+    res.json(mappings);
+  } catch (err) {
+    console.error("❌ Error fetching mappings:", err);
+    res.status(500).json({ error: "Failed to fetch mappings" });
+  }
 });
 
 module.exports = router;
