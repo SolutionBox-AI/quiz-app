@@ -143,6 +143,7 @@
       }
 
       fetch(`${BASE_URL}/api/quiz/test/${currentTestId}/save`, {
+        log.console(currentTestId);///////////////////////////////////////////////////////////////////////////
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(questions)
