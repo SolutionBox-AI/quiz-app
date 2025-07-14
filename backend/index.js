@@ -1,40 +1,45 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const dotenv = require("dotenv");
 const cors = require("cors");
-
-const quizRoutes = require("./routes/quizRoutes");
-const mappingRoutes = require("./routes/mappingRoutes");
-
-dotenv.config(); // ✅ Load .env variables
+require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 10000;
-
-// ✅ Fallback Mongo URL if env variable is missing
-const MONGO_URL =
-  process.env.MONGO_URL ||
-  "mongodb+srv://SolutionBox:9829004187%40Ba@quiz-appdb.0j3x50l.mongodb.net/quizdb?retryWrites=true&w=majority&appName=quiz-app";
-
-console.log("MONGO_URL being used:", MONGO_URL); // ✅ For debug
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
 // Routes
+const quizRoutes = require("./routes/quizRoutes");
+const mappingRoutes = require("./routes/mappingRoutes");
+
 app.use("/api/quiz", quizRoutes);
 app.use("/api/mapping", mappingRoutes);
 
+// ✅ Root route for testing Render deployment
+app.get("/", (req, res) => {
+  res.send("✅ Quiz API is running!");
+});
+
 // Connect to MongoDB
-mongoose
-  .connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => {
-    console.log("✅ Connected to MongoDB");
-    app.listen(PORT, () => {
-      console.log(`🚀 Server is running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB connection error:", err);
+const MONGO_URL = process.env.MONGO_URL;
+const PORT = process.env.PORT || 10000;
+
+if (!MONGO_URL) {
+  console.error("❌ MONGO_URL not found in environment variables.");
+  process.exit(1);
+}
+
+mongoose.connect(MONGO_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => {
+  console.log("✅ MongoDB connected successfully");
+  app.listen(PORT, () => {
+    console.log(`🚀 Server is running on port ${PORT}`);
   });
+})
+.catch((err) => {
+  console.error("❌ MongoDB connection error:", err);
+});
