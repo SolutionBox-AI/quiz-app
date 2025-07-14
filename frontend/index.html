@@ -54,19 +54,20 @@
   </div>
 
   <script>
-    function adminLogin() {
-      const user = document.getElementById("adminUsername").value.trim();
-      const pass = document.getElementById("adminPassword").value.trim();
+    
+   function adminLogin() {
+  const user = document.getElementById("adminUsername").value.trim();
+  const pass = document.getElementById("adminPassword").value.trim();
 
-      // Dummy check — Replace with real authentication logic later
-      if (user === "admin" && pass === "admin123") {
-        sessionStorage.setItem("role", "admin");
-        sessionStorage.setItem("admin", user);
-        window.location.href = "admin.html";
-      } else {
-        alert("❌ Invalid admin credentials.");
-      }
-    }
+  if (user === "admin" && pass === "admin123") {
+    sessionStorage.setItem("role", "admin");
+    sessionStorage.setItem("admin", user); // ✅ This stores 'admin' as name
+    window.location.href = "admin.html";
+  } else {
+    alert("❌ Invalid admin credentials.");
+  }
+}
+
 
     function studentLogin() {
       const name = document.getElementById("studentName").value.trim();
