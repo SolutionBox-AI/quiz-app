@@ -4,13 +4,23 @@
   <meta charset="UTF-8" />
   <title>Take Quiz</title>
   <style>
-    body { font-family: Arial, margin: 40px; }
-    .question { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; }
-    label { display: block; margin-top: 5px; }
-    button { padding: 10px 20px; font-size: 16px; margin-top: 20px; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .question-container { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; }
+    .options label { display: block; margin: 5px 0; }
+    .navigation { margin-top: 20px; }
+    button { padding: 10px 20px; margin: 5px; }
   </style>
 </head>
 <body>
+
+  <h2>📝 Quiz: <span id="testTitle"></span></h2>
+  <div id="quizBox"></div>
+
+  <div class="navigation">
+    <button onclick="prevQuestion()">⬅️ Previous</button>
+    <button onclick="nextQuestion()">➡️ Next</button>
+    <button onclick="submitQuiz()">✅ Submit Quiz</button>
+  </div>
 
   <script>
     const BASE_URL = "https://quiz-app-4087.onrender.com";
@@ -18,96 +28,98 @@
     const role = sessionStorage.getItem("role");
     const name = sessionStorage.getItem("name");
     const userCode = sessionStorage.getItem("userCode");
+    const testId = sessionStorage.getItem("selectedTest");
 
-    if (role !== "student" || !name || !userCode) {
-      alert("Access denied. Please login as student.");
+    if (role !== "student" || !name || !userCode || !testId) {
+      alert("Access denied. Please login as student and select a test.");
       window.location.href = "index.html";
     }
-  </script>
 
-  <h2>📝 Take a Test</h2>
-  <label for="testSelect">Select Test:</label>
-  <select id="testSelect">
-    <option value="">-- Loading Tests --</option>
-  </select>
+    document.getElementById("testTitle").textContent = testId;
 
-  <div id="quizContainer" style="display:none;">
-    <form id="quizForm"></form>
-    <button onclick="submitQuiz()">Submit Quiz</button>
-  </div>
+    let currentQuestionIndex = 0;
+    let questions = [];
+    let answers = [];
 
-  <script>
-    let selectedTest = "";
+    // Load Questions
+    fetch(`${BASE_URL}/api/quiz/test/${testId}/questions`)
+      .then(res => res.json())
+      .then(data => {
+        if (!Array.isArray(data) || data.length === 0) {
+          document.getElementById("quizBox").innerHTML = "<p>No questions found.</p>";
+          return;
+        }
 
-    window.onload = () => {
-      fetch(`${BASE_URL}/api/quiz/test-list-for-student?name=${encodeURIComponent(name)}&userCode=${encodeURIComponent(userCode)}`)
-        .then(res => res.json())
-        .then(tests => {
-          const select = document.getElementById("testSelect");
-          select.innerHTML = '<option value="">-- Select Test --</option>';
-          tests.forEach(t => {
-            const opt = document.createElement("option");
-            opt.value = t;
-            opt.textContent = t;
-            select.appendChild(opt);
-          });
+        questions = data;
+        answers = new Array(questions.length).fill(null);
+        showQuestion(currentQuestionIndex);
+      })
+      .catch(err => {
+        alert("❌ Failed to load quiz questions.");
+        console.error(err);
+      });
 
-          select.addEventListener("change", () => {
-            selectedTest = select.value;
-            sessionStorage.setItem("selectedTest", selectedTest);
-            loadQuiz(selectedTest);
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          alert("❌ Failed to load tests.");
-        });
-    };
+    function showQuestion(index) {
+      const q = questions[index];
+      const container = document.getElementById("quizBox");
 
-    function loadQuiz(testId) {
-      fetch(`${BASE_URL}/api/quiz/test/${testId}/questions`)
-        .then(res => res.json())
-        .then(data => {
-          const form = document.getElementById("quizForm");
-          form.innerHTML = "";
-          data.forEach((q, index) => {
-            const div = document.createElement("div");
-            div.className = "question";
+      const optionsHTML = q.options.map((opt, i) => {
+        const checked = answers[index] === opt ? "checked" : "";
+        return `
+          <label>
+            <input type="radio" name="option" value="${opt}" ${checked} />
+            ${String.fromCharCode(65 + i)}. ${opt}
+          </label>`;
+      }).join("");
 
-            div.innerHTML = `<strong>Q${index + 1}. ${q.question}</strong><br>
-              ${q.options.map((opt, i) => `
-                <label>
-                  <input type="radio" name="q${index}" value="${opt}" />
-                  ${String.fromCharCode(65 + i)}. ${opt}
-                </label>`).join("")}`;
+      container.innerHTML = `
+        <div class="question-container">
+          <strong>Q${index + 1}. ${q.question}</strong>
+          <div class="options">${optionsHTML}</div>
+        </div>
+      `;
+    }
 
-            form.appendChild(div);
-          });
+    function saveAnswer() {
+      const selected = document.querySelector("input[name='option']:checked");
+      if (selected) {
+        answers[currentQuestionIndex] = selected.value;
+      }
+    }
 
-          document.getElementById("quizContainer").style.display = "block";
-        });
+    function nextQuestion() {
+      saveAnswer();
+      if (currentQuestionIndex < questions.length - 1) {
+        currentQuestionIndex++;
+        showQuestion(currentQuestionIndex);
+      }
+    }
+
+    function prevQuestion() {
+      saveAnswer();
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        showQuestion(currentQuestionIndex);
+      }
     }
 
     function submitQuiz() {
-      const testId = selectedTest;
-      if (!testId) return alert("Please select a test first.");
+      saveAnswer();
 
-      const form = document.getElementById("quizForm");
-      const answers = [];
+      if (answers.some(a => a === null)) {
+        alert("Please answer all questions before submitting.");
+        return;
+      }
 
-      const questions = form.querySelectorAll(".question");
-      questions.forEach((div, i) => {
-        const questionText = div.querySelector("strong").innerText.replace(/^Q\d+\. /, "");
-        const selectedOption = div.querySelector("input[type='radio']:checked");
-        if (selectedOption) {
-          answers.push({ question: questionText, selected: selectedOption.value });
-        }
-      });
+      const finalAnswers = questions.map((q, i) => ({
+        question: q.question,
+        selected: answers[i]
+      }));
 
       fetch(`${BASE_URL}/api/quiz/test/${testId}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ testId, name, userCode, answers })
+        body: JSON.stringify({ testId, name, userCode, answers: finalAnswers })
       })
         .then(res => res.json())
         .then(data => {
@@ -115,12 +127,12 @@
             alert("✅ Quiz submitted successfully!");
             window.location.href = "quiz.html";
           } else {
-            alert("❌ " + (data.error || "Submission failed"));
+            alert("❌ Error: " + (data.error || "Submission failed."));
           }
         })
         .catch(err => {
+          alert("❌ Server error.");
           console.error(err);
-          alert("❌ Failed to submit quiz.");
         });
     }
   </script>
