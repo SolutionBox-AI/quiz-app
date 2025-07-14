@@ -6,24 +6,22 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 40px;
+      padding: 40px;
       text-align: center;
     }
-
     h2 {
-      margin-bottom: 30px;
+      margin-bottom: 20px;
     }
-
+    .admin-panel {
+      border: 1px solid #ccc;
+      padding: 30px;
+      display: inline-block;
+    }
     button {
-      padding: 12px 20px;
-      margin: 10px;
+      padding: 12px 24px;
       font-size: 16px;
+      margin: 10px;
       cursor: pointer;
-    }
-
-    .email {
-      font-weight: bold;
-      color: green;
     }
   </style>
 </head>
@@ -31,26 +29,27 @@
 
   <script>
     const role = sessionStorage.getItem("role");
-    const email = sessionStorage.getItem("email");
-    const name = sessionStorage.getItem("name");
+    const email = sessionStorage.getItem("admin");
 
-    if (role !== "admin") {
+    if (role !== "admin" || !email) {
       alert("Access denied. Please login as admin.");
       window.location.href = "index.html";
     }
   </script>
 
-  <h2>👨‍🏫 Welcome to Admin Dashboard</h2>
-  <p class="email">Logged in as: <span id="adminEmail"></span></p>
+  <h2>👨‍🏫 Admin Panel</h2>
+  <p>Logged in as: <strong id="adminEmail"></strong></p>
 
-  <button onclick="window.location.href='form.html'">📝 Create/Edit Test</button>
-  <button onclick="window.location.href='view-responses.html'">👁 View Responses</button>
-  <button onclick="window.location.href='scores.html'">📊 View Scores</button>
-  <button onclick="window.location.href='upload-mapping.html'">📁 Upload Student Mapping</button>
-  <button onclick="logout()">🚪 Logout</button>
+  <div class="admin-panel">
+    <button onclick="window.location.href='form.html'">📝 Create/Edit Test</button><br>
+    <button onclick="window.location.href='responses.html'">📋 View Responses</button><br>
+    <button onclick="window.location.href='scores.html'">📈 View Scores</button><br>
+    <button onclick="window.location.href='upload-mapping.html'">📁 Upload Mapping</button><br>
+    <button onclick="logout()">🚪 Logout</button>
+  </div>
 
   <script>
-    document.getElementById("adminEmail").textContent = sessionStorage.getItem("email");
+    document.getElementById("adminEmail").textContent = sessionStorage.getItem("admin");
 
     function logout() {
       sessionStorage.clear();
