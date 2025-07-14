@@ -1,45 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Upload Admin-Student Mapping</title>
+  <title>Upload Mapping</title>
   <style>
-    body {
-      font-family: Arial;
-      margin: 40px;
-    }
-    input, button {
-      font-size: 16px;
-      padding: 8px 12px;
-      margin-top: 10px;
-    }
-    #result {
-      margin-top: 20px;
-      font-weight: bold;
-    }
+    body { font-family: Arial; padding: 30px; }
+    input[type="file"] { margin: 20px 0; }
   </style>
 </head>
 <body>
+  <script>
+    if (sessionStorage.getItem("role") !== "admin") {
+      alert("Only admins can access this page.");
+      location.href = "index.html";
+    }
+  </script>
 
-  <h2>📂 Upload Admin-Student Mapping (CSV)</h2>
-
-  <p><strong>File Format:</strong><br><code>adminCode,adminName,studentCode,studentName</code></p>
-
-  <input type="file" id="fileInput" accept=".csv" />
-  <br>
-  <button onclick="uploadMapping()">📤 Upload Mapping</button>
-
-  <div id="result"></div>
+  <h2>📤 Upload Student–Admin Mapping</h2>
+  <input type="file" id="mappingFile" accept=".csv" />
+  <button onclick="uploadMapping()">Upload</button>
+  <p id="status"></p>
 
   <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com"; // Adjust if needed
+    const BASE = "https://quiz-app-backend.onrender.com"; // change to your backend
 
     async function uploadMapping() {
-      const fileInput = document.getElementById('fileInput');
+      const fileInput = document.getElementById("mappingFile");
       const file = fileInput.files[0];
-      const resultBox = document.getElementById('result');
-
-      if (!file) {
-        alert("Please select a CSV file.");
+      if (!file || file.type !== "text/csv") {
+        alert("Please upload a valid CSV file.");
         return;
       }
 
@@ -47,25 +35,16 @@
       formData.append("file", file);
 
       try {
-        const res = await fetch(`${BASE_URL}/api/quiz/upload-mapping`, {
+        const res = await fetch(`${BASE}/api/mapping/upload`, {
           method: "POST",
           body: formData
         });
-
         const data = await res.json();
-
-        if (res.ok) {
-          resultBox.innerHTML = `✅ ${data.message}`;
-        } else {
-          resultBox.innerHTML = `❌ Failed: ${data.error || "Unknown error"}`;
-        }
+        document.getElementById("status").innerText = data.message || data.error;
       } catch (err) {
-        console.error(err);
-        resultBox.innerHTML = "❌ Server error while uploading.";
+        document.getElementById("status").innerText = "Upload failed.";
       }
     }
   </script>
-
 </body>
 </html>
-
