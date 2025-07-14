@@ -1,1 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>View Admin-Student Mapping</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 20px;
+    }
+    th, td {
+      padding: 10px; border: 1px solid #ccc; text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    select, button {
+      padding: 8px 12px; font-size: 16px; margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>👩‍🏫 View Admin-Student Mapping</h2>
+
+  <label for="adminSelect">Select Admin Email:</label>
+  <select id="adminSelect" onchange="filterMappings()">
+    <option value="">-- All Admins --</option>
+  </select>
+
+  <table id="mappingTable">
+    <thead>
+      <tr>
+        <th>Admin Email</th>
+        <th>Student Name</th>
+        <th>Student Code</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const BASE_URL = "https://quiz-app-4087.onrender.com"; // Your backend base URL
+
+    let allMappings = [];
+
+    window.onload = () => {
+      fetch(`${BASE_URL}/api/mapping/all`)
+        .then(res => res.json())
+        .then(data => {
+          allMappings = data;
+          populateTable(allMappings);
+          populateAdminDropdown(allMappings);
+        })
+        .catch(err => {
+          console.error(err);
+          alert("❌ Failed to load mapping data.");
+        });
+    };
+
+    function populateTable(data) {
+      const tbody = document.querySelector("#mappingTable tbody");
+      tbody.innerHTML = "";
+      data.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.adminEmail}</td>
+          <td>${row.studentName}</td>
+          <td>${row.studentCode}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function populateAdminDropdown(data) {
+      const uniqueAdmins = [...new Set(data.map(item => item.adminEmail))];
+      const select = document.getElementById("adminSelect");
+
+      uniqueAdmins.forEach(email => {
+        const opt = document.createElement("option");
+        opt.value = email;
+        opt.textContent = email;
+        select.appendChild(opt);
+      });
+    }
+
+    function filterMappings() {
+      const selectedAdmin = document.getElementById("adminSelect").value;
+      const filtered = selectedAdmin
+        ? allMappings.filter(m => m.adminEmail === selectedAdmin)
+        : allMappings;
+
+      populateTable(filtered);
+    }
+  </script>
+
+</body>
+</html>
 
