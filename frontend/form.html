@@ -13,18 +13,6 @@
 </head>
 <body>
 
-  <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com";
-
-    const role = sessionStorage.getItem("role");
-    const teacherEmail = sessionStorage.getItem("admin"); // ✅ Use 'admin' from login
-
-    if (role !== "admin" || !teacherEmail) {
-      alert("Access denied. Please login as admin.");
-      window.location.href = "index.html";
-    }
-  </script>
-
   <h2>📝 Create / Edit Test Paper</h2>
   <p>Logged in as: <strong id="loggedInEmail"></strong></p>
 
@@ -46,14 +34,23 @@
   <button onclick="window.location.href='admin.html'">🔙 Back to Admin</button>
 
   <script>
-    let currentTestId = "";
+    const BASE_URL = "https://quiz-app-4087.onrender.com";
 
-    // Show admin email
+    const role = sessionStorage.getItem("role");
+    const teacherEmail = sessionStorage.getItem("admin");
+
+    if (role !== "admin" || !teacherEmail) {
+      alert("Access denied. Please login as admin.");
+      window.location.href = "index.html";
+    }
+
     document.getElementById("loggedInEmail").textContent = teacherEmail;
 
-    // Load existing test names created by this admin
+    let currentTestId = "";
+
+    // ✅ Load test list for this teacher only
     window.onload = () => {
-      fetch(`${BASE_URL}/api/quiz/tests?teacherEmail=${teacherEmail}`)
+      fetch(`${BASE_URL}/api/quiz/tests?teacherEmail=${encodeURIComponent(teacherEmail)}`)
         .then(res => res.json())
         .then(tests => {
           const sel = document.getElementById("existingTests");
@@ -64,7 +61,8 @@
             opt.textContent = t;
             sel.appendChild(opt);
           });
-        });
+        })
+        .catch(err => alert("❌ Failed to load tests. Check server connection."));
     };
 
     function createNewTest() {
@@ -121,6 +119,7 @@
 
     function saveTest() {
       if (!currentTestId) return alert("No test selected or created.");
+
       const texts = document.querySelectorAll(".questionText");
       const as = document.querySelectorAll(".optionA");
       const bs = document.querySelectorAll(".optionB");
@@ -138,12 +137,11 @@
           question: texts[i].value,
           options,
           correctAnswer: options[idx],
-          teacherEmail
+          createdBy: teacherEmail // 🟢 Ensure correct field name used in backend
         });
       }
 
       fetch(`${BASE_URL}/api/quiz/test/${currentTestId}/save`, {
-    //   console.log({currentTestId});///////////////////////////////////////////////////////////////////////////
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(questions)
