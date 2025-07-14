@@ -8,41 +8,53 @@ const Mapping = require("../models/Mapping");
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
+// 🔁 Upload CSV and save admin-student mapping
 router.post("/upload", upload.single("mapping"), async (req, res) => {
   const results = [];
 
-  try {
-    const stream = fs.createReadStream(req.file.path)
-      .pipe(csv())
-      .on("data", (data) => {
-        if (data.adminEmail && data.studentName && data.studentCode) {
-          results.push({
-            adminEmail: data.adminEmail.trim(),
-            studentName: data.studentName.trim(),
-            studentCode: data.studentCode.trim()
-          });
-        }
-      })
-      .on("end", async () => {
-        fs.unlinkSync(req.file.path); // Clean temp file
+  const filePath = req.file.path;
 
-        if (!results.length) {
-          return res.status(400).json({ success: false, message: "CSV parsed but no valid data" });
+  fs.createReadStream(filePath)
+    .pipe(csv())
+    .on("data", (data) => {
+      console.log("Raw Row ➜", data); // 👈 log each row to debug
+
+      // Normalize keys to prevent BOM or whitespace issues
+      const cleaned = {};
+      for (const key in data) {
+        const cleanKey = key.trim().replace(/\uFEFF/g, ""); // remove BOM
+        cleaned[cleanKey] = data[key].trim();
+      }
+
+      if (cleaned.adminEmail && cleaned.studentName && cleaned.studentCode) {
+        results.push({
+          adminEmail: cleaned.adminEmail,
+          studentName: cleaned.studentName,
+          studentCode: cleaned.studentCode,
+        });
+      }
+    })
+    .on("end", async () => {
+      try {
+        if (results.length === 0) {
+          console.log("❌ No valid rows found in CSV.");
+          return res
+            .status(400)
+            .json({ success: false, message: "CSV parsed but no valid data" });
         }
 
-        try {
-          await Mapping.deleteMany(); // Optional
-          await Mapping.insertMany(results);
-          res.json({ success: true, message: "✅ Mapping uploaded successfully!" });
-        } catch (err) {
-          console.error("❌ Error saving mappings:", err);
-          res.status(500).json({ success: false, message: "❌ Failed to save mappings." });
-        }
-      });
-  } catch (err) {
-    console.error("❌ CSV upload failed:", err);
-    res.status(500).json({ success: false, message: "❌ CSV upload error." });
-  }
+        await Mapping.deleteMany({});
+        await Mapping.insertMany(results);
+        fs.unlinkSync(filePath);
+        res.json({ success: true, message: "✅ Mapping uploaded successfully!" });
+      } catch (err) {
+        console.error("❌ Error saving mappings:", err);
+        res.status(500).json({
+          success: false,
+          message: "❌ Error saving mappings to database.",
+        });
+      }
+    });
 });
 
 module.exports = router;
