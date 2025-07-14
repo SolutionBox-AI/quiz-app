@@ -1,157 +1,112 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Create / Edit Test</title>
+  <meta charset="UTF-8" />
+  <title>Create/Edit Test</title>
   <style>
     body { font-family: Arial; margin: 40px; }
-    textarea, input, select { width: 100%; padding: 10px; margin-bottom: 10px; font-size: 16px; }
-    button { padding: 10px 20px; font-size: 16px; margin-right: 10px; }
-    .question-block { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; position: relative; }
-    .remove-btn {
-      position: absolute;
-      top: 10px; right: 10px;
-      background-color: red; color: white; border: none; padding: 4px 8px;
-      cursor: pointer;
-    }
+    input, select, button { padding: 8px; margin: 5px; font-size: 16px; }
+    textarea { width: 400px; height: 60px; margin: 5px; display: block; }
+    .question-block { border: 1px solid #ccc; padding: 10px; margin-bottom: 15px; }
   </style>
 </head>
 <body>
 
-  <script>
-    if (sessionStorage.getItem("role") !== "admin") {
-      alert("Access denied. Please login as admin.");
-      window.location.href = "index.html";
-    }
-  </script>
+<script>
+  if (sessionStorage.getItem("role") !== "admin") {
+    alert("Access denied.");
+    window.location.href = "index.html";
+  }
+</script>
 
-  <h2>🛠 Create or Edit Test</h2>
+<h2>📝 Create / Edit Quiz</h2>
 
-  <label>Select Existing Test:</label>
-  <select id="testSelect" onchange="onTestSelect(this.value)">
-    <option value="">-- Select Test --</option>
-  </select>
+<label for="testIdInput">Test Name:</label>
+<input id="testIdInput" placeholder="Enter new or existing test ID" />
+<button onclick="loadTest()">📂 Load</button>
 
-  <label>Or Enter New Test Name:</label>
-  <input type="text" id="testNameInput" oninput="onManualTestName()" placeholder="e.g. Demo-01" />
+<div id="controls" style="display:none;">
+  <button onclick="addQuestion()">➕ Add Question</button>
+  <button onclick="saveTest()">💾 Save Test</button>
+</div>
 
-  <div id="questionsArea"></div>
+<div id="questionContainer"></div>
 
-  <div id="questionButtons" style="display:none;">
-    <button onclick="addQuestion()">➕ Add Question</button>
-    <button onclick="saveTest()">💾 Save Test</button>
-    <button onclick="goBack()">🔙 Back to Admin</button>
-  </div>
+<button onclick="logout()">🔙 Logout</button>
 
-  <script>
-    const BASE = "https://quiz-app-4087.onrender.com/api/quiz";
-    let currentTestId = "";
+<script>
+  const BASE = "https://quiz-app-4087.onrender.com/api/quiz";
+  let currentTestId = "";
 
-    window.onload = () => {
-      fetch(`${BASE}/tests`)
-        .then(res => res.json())
-        .then(tests => {
-          const select = document.getElementById("testSelect");
-          tests.forEach(test => {
-            const opt = document.createElement("option");
-            opt.value = test;
-            opt.textContent = test;
-            select.appendChild(opt);
-          });
-        });
-    };
+  function loadTest() {
+    currentTestId = document.getElementById("testIdInput").value.trim();
+    if (!currentTestId) return alert("Enter a test name first.");
 
-    function onTestSelect(testId) {
-      if (!testId) return;
-      document.getElementById("testNameInput").value = testId;
-      currentTestId = testId;
-      document.getElementById("questionButtons").style.display = "block";
-      loadQuestions(testId);
-    }
+    document.getElementById("controls").style.display = "block";
 
-    function onManualTestName() {
-      const testId = document.getElementById("testNameInput").value.trim();
-      if (testId) {
-        currentTestId = testId;
-        document.getElementById("questionButtons").style.display = "block";
-        document.getElementById("testSelect").value = ""; // Clear dropdown
-        loadQuestions(testId); // try loading if already exists
-      } else {
-        document.getElementById("questionButtons").style.display = "none";
-        currentTestId = "";
-        document.getElementById("questionsArea").innerHTML = "";
-      }
-    }
-
-    function loadQuestions(testId) {
-      fetch(`${BASE}/test/${testId}/questions`)
-        .then(res => res.json())
-        .then(data => {
-          const area = document.getElementById("questionsArea");
-          area.innerHTML = "";
-          data.forEach(q => addQuestion(q));
-        })
-        .catch(() => {
-          // Assume new test, clear questions
-          document.getElementById("questionsArea").innerHTML = "";
-        });
-    }
-
-    function addQuestion(existing = {}) {
-      const area = document.getElementById("questionsArea");
-      const block = document.createElement("div");
-      block.className = "question-block";
-
-      block.innerHTML = `
-        <button class="remove-btn" onclick="this.parentElement.remove()">❌</button>
-        <textarea class="questionText" placeholder="Question...">${existing.question || ""}</textarea>
-        A: <input class="optionA" value="${existing.options?.[0] || ""}" />
-        B: <input class="optionB" value="${existing.options?.[1] || ""}" />
-        C: <input class="optionC" value="${existing.options?.[2] || ""}" />
-        D: <input class="optionD" value="${existing.options?.[3] || ""}" />
-        Correct (A/B/C/D): <input class="correctAnswer" value="${
-          existing.correctAnswer
-            ? ["A", "B", "C", "D"][existing.options?.indexOf(existing.correctAnswer)] || ""
-            : ""
-        }" />
-      `;
-      area.appendChild(block);
-    }
-
-    function saveTest() {
-      if (!currentTestId) return alert("Please enter or select a test name first.");
-
-      const texts = document.querySelectorAll(".questionText");
-      const as = document.querySelectorAll(".optionA");
-      const bs = document.querySelectorAll(".optionB");
-      const cs = document.querySelectorAll(".optionC");
-      const ds = document.querySelectorAll(".optionD");
-      const corr = document.querySelectorAll(".correctAnswer");
-
-      const arr = [];
-      for (let i = 0; i < texts.length; i++) {
-        const ops = [as[i].value, bs[i].value, cs[i].value, ds[i].value];
-        const c = corr[i].value.trim().toUpperCase();
-        const idx = { A: 0, B: 1, C: 2, D: 3 }[c];
-        if (idx === undefined) return alert(`Invalid correct answer at Q${i + 1}`);
-        arr.push({ question: texts[i].value.trim(), options: ops, correctAnswer: ops[idx] });
-      }
-
-      fetch(`${BASE}/test/${currentTestId}/save`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(arr)
+    fetch(`${BASE}/test/${currentTestId}/questions`)
+      .then(res => res.json())
+      .then(questions => {
+        const container = document.getElementById("questionContainer");
+        container.innerHTML = "";
+        questions.forEach(q => renderQuestion(q));
       })
-        .then(res => res.json().then(data => {
-          if (res.ok) alert("✅ Test saved.");
-          else alert("❌ Failed: " + data.error);
-        }))
-        .catch(() => alert("❌ Server error while saving test."));
-    }
+      .catch(() => alert("New test. Start adding questions."));
+  }
 
-    function goBack() {
-      window.location.href = "admin.html";
-    }
-  </script>
+  function renderQuestion(q = { question: "", options: ["", "", "", ""], correctAnswer: "" }) {
+    const idx = ["A", "B", "C", "D"];
+    const div = document.createElement("div");
+    div.className = "question-block";
+
+    div.innerHTML = `
+      <textarea class="questionText" placeholder="Question">${q.question}</textarea>
+      ${q.options.map((opt, i) => `
+        <input class="option${idx[i]}" placeholder="Option ${idx[i]}" value="${opt}" />
+      `).join("")}
+      <input class="correctAnswer" placeholder="Correct (A/B/C/D)" value="${idx[q.options.indexOf(q.correctAnswer)] || ""}" />
+      <button onclick="this.parentElement.remove()">❌ Delete</button>
+    `;
+    document.getElementById("questionContainer").appendChild(div);
+  }
+
+  function addQuestion() {
+    renderQuestion();
+  }
+
+  function saveTest() {
+    if (!currentTestId) return alert("No test loaded.");
+    const adminEmail = sessionStorage.getItem("email");
+    const blocks = document.querySelectorAll(".question-block");
+
+    const questions = Array.from(blocks).map(block => {
+      const qText = block.querySelector(".questionText").value;
+      const ops = ["A", "B", "C", "D"].map(l => block.querySelector(".option" + l).value);
+      const correctLetter = block.querySelector(".correctAnswer").value.toUpperCase();
+      const idx = { A: 0, B: 1, C: 2, D: 3 }[correctLetter];
+      if (idx === undefined) throw new Error(`Invalid correct answer at "${qText}"`);
+      return { testId: currentTestId, question: qText, options: ops, correctAnswer: ops[idx], createdBy: adminEmail };
+    });
+
+    fetch(`${BASE}/test/${currentTestId}/save`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(questions)
+    })
+    .then(res => res.json())
+    .then(data => alert("✅ " + data.message))
+    .catch(err => {
+      console.error(err);
+      alert("❌ Failed to save test.");
+    });
+  }
+
+  function logout() {
+    sessionStorage.clear();
+    window.location.href = "index.html";
+  }
+</script>
 
 </body>
 </html>
+
