@@ -4,10 +4,40 @@
   <meta charset="UTF-8" />
   <title>Upload Student-Admin Mapping</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 40px; }
-    h2 { margin-bottom: 20px; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background-color: #f9f9f9;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
     input[type="file"], button {
-      padding: 10px; font-size: 16px; margin-top: 10px;
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+
+    #statusMsg {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    .success {
+      color: green;
+    }
+
+    .error {
+      color: red;
+    }
+
+    a {
+      display: inline-block;
+      margin-top: 20px;
+      text-decoration: none;
+      font-size: 16px;
     }
   </style>
 </head>
@@ -17,20 +47,26 @@
 
   <input type="file" id="csvFile" accept=".csv" />
   <br><br>
-  <button onclick="uploadCSV()">🚀 Upload</button>
+  <button onclick="uploadCSV()">🚀 Upload Mapping</button>
 
   <p id="statusMsg"></p>
 
+  <a href="admin.html">🔙 Back to Admin Panel</a>
+
   <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com"; // Replace if different
+    const BASE_URL = "https://quiz-app-4087.onrender.com"; // Change if needed
 
     async function uploadCSV() {
       const fileInput = document.getElementById("csvFile");
       const file = fileInput.files[0];
       const statusMsg = document.getElementById("statusMsg");
 
+      statusMsg.className = "";
+      statusMsg.textContent = "";
+
       if (!file) {
         statusMsg.textContent = "❌ Please select a CSV file.";
+        statusMsg.className = "error";
         return;
       }
 
@@ -47,12 +83,15 @@
 
         if (res.ok) {
           statusMsg.textContent = "✅ Mapping uploaded successfully!";
+          statusMsg.className = "success";
         } else {
-          statusMsg.textContent = "❌ Upload failed: " + data.error;
+          statusMsg.textContent = "❌ Upload failed: " + (data.message || data.error);
+          statusMsg.className = "error";
         }
       } catch (err) {
         console.error(err);
-        statusMsg.textContent = "⚠️ Error uploading CSV.";
+        statusMsg.textContent = "⚠️ Server error while uploading.";
+        statusMsg.className = "error";
       }
     }
   </script>
