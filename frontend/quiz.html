@@ -2,131 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Take Quiz</title>
+  <title>Student Quiz</title>
   <style>
-    body { font-family: Arial; margin: 40px; }
-    .questionBox { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
-    .option { display: block; margin: 5px 0; }
-    button { padding: 10px 20px; margin-top: 20px; }
+    body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
+    select, input, button { padding: 10px; font-size: 16px; margin: 10px; }
   </style>
 </head>
 <body>
 
   <script>
-    const BASE_URL = "https://quiz-app-4087.onrender.com";
-
     const role = sessionStorage.getItem("role");
-    const studentName = sessionStorage.getItem("name");
+    const name = sessionStorage.getItem("name");
     const userCode = sessionStorage.getItem("userCode");
 
-    if (role !== "student" || !studentName || !userCode) {
+    if (role !== "student" || !name || !userCode) {
       alert("Access denied. Please login as student.");
       window.location.href = "index.html";
     }
   </script>
 
-  <h2>🧪 Welcome, <span id="studentName"></span></h2>
+  <h2>🎓 Welcome, <span id="studentName"></span></h2>
 
-  <label for="testSelect">Select Test:</label>
+  <label for="testSelect">Choose Test:</label>
   <select id="testSelect">
     <option value="">--Loading Tests--</option>
   </select>
-  <button onclick="startQuiz()">▶ Start Quiz</button>
 
-  <form id="quizForm" style="display:none;" onsubmit="submitQuiz(event)">
-    <div id="questionContainer"></div>
-    <button type="submit">🚀 Submit Quiz</button>
-  </form>
+  <button onclick="startQuiz()">Start Quiz</button>
+  <button onclick="logout()">Logout</button>
 
   <script>
-    document.getElementById("studentName").textContent = studentName;
+    const BASE_URL = "https://quiz-app-4087.onrender.com";
 
-    const testSelect = document.getElementById("testSelect");
-    const questionContainer = document.getElementById("questionContainer");
+    document.getElementById("studentName").textContent = sessionStorage.getItem("name");
 
-    // Load tests mapped to this student
-    window.onload = () => {
-      fetch(`${BASE_URL}/api/quiz/testsForStudent?userCode=${userCode}`)
-        .then(res => res.json())
-        .then(tests => {
-          testSelect.innerHTML = '<option value="">--Select Test--</option>';
-          tests.forEach(t => {
-            const opt = document.createElement("option");
-            opt.value = t;
-            opt.textContent = t;
-            testSelect.appendChild(opt);
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          alert("❌ Failed to load test list.");
-        });
+    // Load tests allowed for this student
+    window.onload = async () => {
+      const res = await fetch(`${BASE_URL}/api/quiz/tests-for-student?name=${name}&code=${userCode}`);
+      if (!res.ok) return alert("❌ Failed to fetch test list.");
+      const tests = await res.json();
+
+      const select = document.getElementById("testSelect");
+      select.innerHTML = '<option value="">--Select Test--</option>';
+      tests.forEach(test => {
+        const opt = document.createElement("option");
+        opt.value = test;
+        opt.textContent = test;
+        select.appendChild(opt);
+      });
     };
 
     function startQuiz() {
-      const testId = testSelect.value;
+      const testId = document.getElementById("testSelect").value;
       if (!testId) return alert("Please select a test.");
-
-      fetch(`${BASE_URL}/api/quiz/test/${testId}/questions`)
-        .then(res => res.json())
-        .then(data => {
-          questionContainer.innerHTML = "";
-          data.forEach((q, idx) => {
-            const div = document.createElement("div");
-            div.className = "questionBox";
-
-            div.innerHTML = `
-              <h3>Q${idx + 1}: ${q.question}</h3>
-              ${q.options.map((opt, i) =>
-                `<label class="option">
-                  <input type="radio" name="q${idx}" value="${opt}" required />
-                  ${opt}
-                </label>`).join("")}
-            `;
-            questionContainer.appendChild(div);
-          });
-
-          document.getElementById("quizForm").style.display = "block";
-        })
-        .catch(err => {
-          console.error(err);
-          alert("❌ Failed to load questions.");
-        });
+      sessionStorage.setItem("selectedTest", testId);
+      window.location.href = "take-quiz.html"; // Make sure this exists
     }
 
-    function submitQuiz(event) {
-      event.preventDefault();
-
-      const testId = testSelect.value;
-      const answers = [];
-
-      const qBoxes = document.querySelectorAll(".questionBox");
-      qBoxes.forEach((box, idx) => {
-        const qText = box.querySelector("h3").textContent.slice(4); // Remove Q1: etc.
-        const selected = box.querySelector(`input[name="q${idx}"]:checked`);
-        if (selected) {
-          answers.push({ question: qText, selected: selected.value });
-        }
-      });
-
-      fetch(`${BASE_URL}/api/quiz/test/${testId}/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ testId, name: studentName, userCode, answers })
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.message) {
-            alert("✅ Quiz submitted!");
-            window.location.href = "index.html";
-          } else {
-            alert("❌ Submission failed.");
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          alert("❌ Server error while submitting.");
-        });
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = "index.html";
     }
   </script>
 
