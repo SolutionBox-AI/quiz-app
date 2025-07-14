@@ -1,42 +1,33 @@
+// routes/mappingRoutes.js
 const express = require("express");
-const router = express.Router();
 const multer = require("multer");
 const csv = require("csv-parser");
 const fs = require("fs");
-const path = require("path");
-const AdminStudentMap = require("../models/AdminStudentMap");
+const Mapping = require("../models/Mapping");
 
-// Multer config
+const router = express.Router();
+
+// Temporary storage for uploaded CSV files
 const upload = multer({ dest: "uploads/" });
 
-// POST: Upload CSV and save mappings
-router.post("/upload-mapping", upload.single("mappingFile"), async (req, res) => {
-  const filePath = req.file.path;
+// POST /api/mapping/upload
+router.post("/upload", upload.single("mapping"), async (req, res) => {
   const results = [];
 
-  fs.createReadStream(filePath)
+  fs.createReadStream(req.file.path)
     .pipe(csv())
-    .on("data", (data) => {
-      // Expecting columns: adminEmail, adminName, studentCode, studentName
-      if (data.adminEmail && data.studentCode) {
-        results.push({
-          adminEmail: data.adminEmail,
-          adminName: data.adminName || "",
-          studentCode: data.studentCode,
-          studentName: data.studentName || ""
-        });
-      }
-    })
+    .on("data", (data) => results.push(data))
     .on("end", async () => {
       try {
-        await AdminStudentMap.insertMany(results);
-        fs.unlinkSync(filePath); // remove uploaded file
-        res.json({ message: "✅ Mapping uploaded successfully", count: results.length });
+        await Mapping.deleteMany({}); // Clear previous mappings if needed
+        await Mapping.insertMany(results);
+        fs.unlinkSync(req.file.path); // delete temp file
+        res.json({ success: true, message: "Mapping uploaded successfully." });
       } catch (err) {
-        res.status(500).json({ error: "❌ Failed to save mappings" });
+        console.error(err);
+        res.status(500).json({ success: false, message: "Error saving mapping." });
       }
     });
 });
 
 module.exports = router;
-
