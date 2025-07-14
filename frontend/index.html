@@ -6,75 +6,81 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 40px;
+      margin: 50px;
       text-align: center;
     }
-
-    input, select, button {
+    h2 {
+      margin-bottom: 30px;
+    }
+    .login-section {
+      margin-bottom: 50px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    input {
+      display: block;
+      margin: 10px auto;
       padding: 10px;
       font-size: 16px;
-      margin: 10px;
+      width: 80%;
     }
-
-    .container {
-      max-width: 400px;
-      margin: 60px auto;
-      padding: 30px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <h2>🔐 Welcome to Quiz App</h2>
+  <h2>Welcome to Quiz App</h2>
 
-    <label for="role">Select Role:</label><br>
-    <select id="role">
-      <option value="student">Student</option>
-      <option value="admin">Teacher / Admin</option>
-    </select><br>
+  <!-- Admin Login -->
+  <div class="login-section">
+    <h3>Admin Login</h3>
+    <input type="text" id="adminUsername" placeholder="Username" />
+    <input type="password" id="adminPassword" placeholder="Password" />
+    <button onclick="adminLogin()">Login as Admin</button>
+  </div>
 
-    <label for="email">Email:</label><br>
-    <input type="email" id="email" placeholder="Enter your email" /><br>
-
-    <label for="name">Name:</label><br>
-    <input type="text" id="name" placeholder="Your Name" /><br>
-
-    <label for="userCode">User Code:</label><br>
-    <input type="text" id="userCode" placeholder="Your Code" /><br>
-
-    <button onclick="login()">🚀 Login</button>
-
-    <p id="error" style="color:red;"></p>
+  <!-- Student Login -->
+  <div class="login-section">
+    <h3>Student Login</h3>
+    <input type="text" id="studentName" placeholder="Your Name" />
+    <input type="text" id="studentCode" placeholder="Your User Code" />
+    <button onclick="studentLogin()">Login as Student</button>
   </div>
 
   <script>
-    function login() {
-      const role = document.getElementById("role").value;
-      const email = document.getElementById("email").value.trim();
-      const name = document.getElementById("name").value.trim();
-      const code = document.getElementById("userCode").value.trim();
-      const errorMsg = document.getElementById("error");
+    function adminLogin() {
+      const user = document.getElementById("adminUsername").value.trim();
+      const pass = document.getElementById("adminPassword").value.trim();
 
-      if (!email || !name || !code) {
-        errorMsg.textContent = "❌ Please fill all fields.";
+      // Dummy check — Replace with real authentication logic later
+      if (user === "admin" && pass === "admin123") {
+        sessionStorage.setItem("role", "admin");
+        sessionStorage.setItem("admin", user);
+        window.location.href = "admin.html";
+      } else {
+        alert("❌ Invalid admin credentials.");
+      }
+    }
+
+    function studentLogin() {
+      const name = document.getElementById("studentName").value.trim();
+      const code = document.getElementById("studentCode").value.trim();
+
+      if (!name || !code) {
+        alert("❌ Please enter both name and user code.");
         return;
       }
 
-      // Save to session
-      sessionStorage.setItem("role", role);
-      sessionStorage.setItem("email", email);
+      sessionStorage.setItem("role", "student");
       sessionStorage.setItem("name", name);
       sessionStorage.setItem("userCode", code);
-
-      // Redirect based on role
-      if (role === "admin") {
-        window.location.href = "admin.html";
-      } else {
-        window.location.href = "quiz.html";
-      }
+      window.location.href = "quiz.html";
     }
   </script>
 
