@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Create/Edit Test</title>
   <style>
     body { font-family: Arial; margin: 40px; }
@@ -17,7 +17,8 @@
     const BASE_URL = "https://quiz-app-4087.onrender.com";
 
     const role = sessionStorage.getItem("role");
-    const teacherEmail = sessionStorage.getItem("email");
+    const teacherEmail = sessionStorage.getItem("admin"); // ✅ Use 'admin' from login
+
     if (role !== "admin" || !teacherEmail) {
       alert("Access denied. Please login as admin.");
       window.location.href = "index.html";
@@ -25,6 +26,7 @@
   </script>
 
   <h2>📝 Create / Edit Test Paper</h2>
+  <p>Logged in as: <strong id="loggedInEmail"></strong></p>
 
   <label for="existingTests">Choose Test to Edit:</label>
   <select id="existingTests" onchange="loadTest()">
@@ -46,7 +48,10 @@
   <script>
     let currentTestId = "";
 
-    // Load tests created by this teacher
+    // Show admin email
+    document.getElementById("loggedInEmail").textContent = teacherEmail;
+
+    // Load existing test names created by this admin
     window.onload = () => {
       fetch(`${BASE_URL}/api/quiz/tests?teacherEmail=${teacherEmail}`)
         .then(res => res.json())
