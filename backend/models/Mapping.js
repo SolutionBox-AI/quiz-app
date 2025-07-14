@@ -1,10 +1,9 @@
-// models/Mapping.js
 const mongoose = require("mongoose");
 
 const mappingSchema = new mongoose.Schema({
-  adminEmail: String,
-  studentName: String,
-  studentCode: String,
+  adminEmail: { type: String, required: true },
+  studentName: { type: String, required: true },
+  studentCode: { type: String, required: true }
 });
 
 module.exports = mongoose.model("Mapping", mappingSchema);
