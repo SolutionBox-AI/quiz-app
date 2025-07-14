@@ -7,27 +7,45 @@ const Mapping = require("../models/Mapping");
 
 const router = express.Router();
 
-// Temporary storage for uploaded CSV files
+// Configure multer for temporary upload folder
 const upload = multer({ dest: "uploads/" });
 
-// POST /api/mapping/upload
+// 🔁 Upload CSV and save admin-student mapping
 router.post("/upload", upload.single("mapping"), async (req, res) => {
   const results = [];
 
   fs.createReadStream(req.file.path)
     .pipe(csv())
-    .on("data", (data) => results.push(data))
+    .on("data", (data) => {
+      if (data.adminEmail && data.studentName && data.studentCode) {
+        results.push({
+          adminEmail: data.adminEmail.trim(),
+          studentName: data.studentName.trim(),
+          studentCode: data.studentCode.trim()
+        });
+      }
+    })
     .on("end", async () => {
       try {
-        await Mapping.deleteMany({}); // Clear previous mappings if needed
+        await Mapping.deleteMany({}); // Optional: clear old mappings
         await Mapping.insertMany(results);
-        fs.unlinkSync(req.file.path); // delete temp file
-        res.json({ success: true, message: "Mapping uploaded successfully." });
+        fs.unlinkSync(req.file.path); // Clean up uploaded file
+        res.json({ success: true, message: "✅ Mapping uploaded successfully!" });
       } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: "Error saving mapping." });
+        console.error("❌ Error saving mappings:", err);
+        res.status(500).json({ success: false, message: "❌ Error saving mappings to database." });
       }
     });
+});
+
+// 🔍 Get all mappings (for admin view)
+router.get("/all", async (req, res) => {
+  try {
+    const data = await Mapping.find({});
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "❌ Failed to fetch mappings" });
+  }
 });
 
 module.exports = router;
