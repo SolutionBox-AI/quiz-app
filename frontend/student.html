@@ -1,32 +1,45 @@
+<!-- index.html (Login Page) -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Student Quiz</title>
+  <meta charset="UTF-8">
+  <title>Quiz App Login</title>
   <style>
-    body { font-family: Arial, margin: 40px; }
+    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+    input, select, button { padding: 10px; margin: 10px; width: 250px; font-size: 16px; }
   </style>
 </head>
 <body>
+  <h1>Welcome to the Quiz App</h1>
+
+  <input type="text" id="name" placeholder="Enter your name" /><br>
+
+  <select id="role">
+    <option value="" disabled selected>Select Role</option>
+    <option value="student">Student</option>
+    <option value="admin">Admin</option>
+  </select><br>
+
+  <button onclick="login()">Continue</button>
+
   <script>
-    if (sessionStorage.getItem("role") !== "student") {
-      alert("Access denied. Please login as student.");
-      window.location.href = "index.html";
+    function login() {
+      const name = document.getElementById("name").value.trim();
+      const role = document.getElementById("role").value;
+
+      if (!name || !role) {
+        alert("Please enter your name and select a role.");
+        return;
+      }
+
+      localStorage.setItem("username", name);
+
+      if (role === "admin") {
+        window.location.href = "admin.html";
+      } else {
+        window.location.href = "student.html";
+      }
     }
-  </script>
-
-  <h2>Welcome, Student</h2>
- 
-   
-  <p><a href="quiz.html">📝 Take Quiz</a></p>
-
-    <button onclick="logout()">Logout</button>
-  <script>
-    function logout() {
-      sessionStorage.clear();
-      window.location.href = "index.html";
-    }
-
-    
   </script>
 </body>
 </html>
