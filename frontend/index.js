@@ -18,7 +18,7 @@ startBtn.onclick = async () => {
     return;
   }
 
-  const res = await fetch(`https://your-backend-url.onrender.com/api/questions/${testId}`);
+  const res = await fetch(`https://quiz-app-4087.onrender.com/api/questions/${testId}`);
   questions = await res.json();
 
   if (questions.length === 0) {
