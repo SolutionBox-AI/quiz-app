@@ -1,62 +1,20 @@
+<!-- admin.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Admin Dashboard</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 40px;
-      text-align: center;
-    }
-    h2 {
-      margin-bottom: 20px;
-    }
-    .admin-panel {
-      border: 1px solid #ccc;
-      padding: 30px;
-      display: inline-block;
-    }
-    button {
-      padding: 12px 24px;
-      font-size: 16px;
-      margin: 10px;
-      cursor: pointer;
-    }
-  </style>
+  <title>Upload Quiz</title>
 </head>
 <body>
+  <h1>Create a New Quiz</h1>
+  <label>Test ID:</label>
+  <input type="text" id="testId" placeholder="Enter test ID" /><br><br>
 
-  <script>
-    const role = sessionStorage.getItem("role");
-    const email = sessionStorage.getItem("admin");
+  <label>Questions (JSON format):</label><br>
+  <textarea id="questionData" rows="10" cols="50" placeholder='[{"question":"Q1?","options":["A","B","C","D"],"answer":"A"}]'></textarea><br><br>
 
-    if (role !== "admin" || !email) {
-      alert("Access denied. Please login as admin.");
-      window.location.href = "index.html";
-    }
-  </script>
+  <button onclick="uploadQuiz()">Upload</button>
 
-  <h2>👨‍🏫 Admin Panel</h2>
-  <p>Logged in as: <strong id="adminEmail"></strong></p>
-
-  <div class="admin-panel">
-    <button onclick="window.location.href='form.html'">📝 Create/Edit Test</button><br>
-    <button onclick="window.location.href='view-responses.html'">📋 View Responses</button><br>
-    <button onclick="window.location.href='scores.html'">📈 View Scores</button><br>
-    <button onclick="window.location.href='upload-mapping.html'">📁 Upload Teacher-Student Mapping</button><br>
-    <button onclick="window.location.href='view-mapping.html'">📋 View Mapping</button><br>
-    <button onclick="logout()">🚪 Logout</button>
-  </div>
-
-  <script>
-    document.getElementById("adminEmail").textContent = sessionStorage.getItem("admin");
-
-    function logout() {
-      sessionStorage.clear();
-      window.location.href = "index.html";
-    }
-  </script>
-
+  <script src="admin.js"></script>
 </body>
 </html>
