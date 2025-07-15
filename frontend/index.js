@@ -1,61 +1,81 @@
-const express = require('express');
-const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
-const app = express();
+const startBtn = document.getElementById('startBtn');
+const nextBtn = document.getElementById('nextBtn');
+const quizSection = document.getElementById('quizSection');
+const questionBox = document.getElementById('questionBox');
+const optionsBox = document.getElementById('optionsBox');
+const thankYou = document.getElementById('thankYou');
 
-require('dotenv').config();
+let questions = [];
+let currentIndex = 0;
+let responses = [];
 
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
+startBtn.onclick = async () => {
+  const testId = document.getElementById('testId').value;
+  const studentName = document.getElementById('studentName').value;
 
-const QUESTIONS_PATH = path.join(__dirname, 'uploads', 'questions.json');
-const RESPONSES_PATH = path.join(__dirname, 'uploads', 'responses.json');
+  if (!testId || !studentName) {
+    alert("Please fill in both fields.");
+    return;
+  }
 
-app.get('/api/questions', (req, res) => {
-  fs.readFile(QUESTIONS_PATH, 'utf8', (err, data) => {
-    if (err) return res.status(500).send('Error loading questions');
-    res.json(JSON.parse(data));
+  const res = await fetch(`https://your-backend-url.onrender.com/api/questions/${testId}`);
+  questions = await res.json();
+
+  if (questions.length === 0) {
+    alert("No questions found.");
+    return;
+  }
+
+  responses = [];
+  currentIndex = 0;
+  quizSection.style.display = 'block';
+  startBtn.style.display = 'none';
+  showQuestion();
+};
+
+nextBtn.onclick = () => {
+  const selected = document.querySelector('input[name="option"]:checked');
+  if (!selected) {
+    alert("Please select an option.");
+    return;
+  }
+
+  responses.push({
+    questionId: questions[currentIndex]._id,
+    selectedOption: selected.value
   });
-});
 
-app.post('/api/submit', (req, res) => {
-  const newResponse = req.body;
+  currentIndex++;
 
-  fs.readFile(RESPONSES_PATH, 'utf8', (err, data) => {
-    let responses = [];
-    if (!err && data) {
-      responses = JSON.parse(data);
-    }
+  if (currentIndex >= questions.length) {
+    submitAnswers();
+  } else {
+    showQuestion();
+  }
+};
 
-    responses.push(newResponse);
+function showQuestion() {
+  const q = questions[currentIndex];
+  questionBox.innerHTML = `<h3>${q.question}</h3>`;
 
-    fs.writeFile(RESPONSES_PATH, JSON.stringify(responses, null, 2), err => {
-      if (err) return res.status(500).send('Error saving response');
-      res.send({ message: 'Response submitted' });
-    });
+  optionsBox.innerHTML = "";
+  q.options.forEach((opt, i) => {
+    optionsBox.innerHTML += `
+      <label><input type="radio" name="option" value="${opt}"/> ${opt}</label><br/>
+    `;
   });
-});
+}
 
-// const path = require('path');
+async function submitAnswers() {
+  const studentName = document.getElementById('studentName').value;
+  const testId = document.getElementById('testId').value;
 
-// Serve index.html for root path
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
+  await fetch('https://your-backend-url.onrender.com/api/responses', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ studentName, testId, answers: responses })
+  });
 
-app.listen(3000, () => console.log('Server running on http://localhost:10000'));
-
-
-
-
-require('dotenv').config();
-const mongoose = require('mongoose');
-
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
-
+  quizSection.style.display = 'none';
+  thankYou.style.display = 'block';
+}
