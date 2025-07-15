@@ -10,27 +10,33 @@ let currentIndex = 0;
 let responses = [];
 
 startBtn.onclick = async () => {
-  const testId = document.getElementById('testId').value;
-  const studentName = document.getElementById('studentName').value;
+  const testId = document.getElementById('testId').value.trim();
+  const studentName = document.getElementById('studentName').value.trim();
 
   if (!testId || !studentName) {
-    alert("Please fill in both fields.");
+    alert("Please enter both name and test ID.");
     return;
   }
 
-  const res = await fetch(`https://quiz-app-4087.onrender.com/api/questions/${testId}`);
-  questions = await res.json();
+  try {
+    const res = await fetch(`https://your-backend.onrender.com/api/questions/${testId}`);
+    questions = await res.json();
 
-  if (questions.length === 0) {
-    alert("No questions found.");
-    return;
+    if (!questions.length) {
+      alert("No questions found for this test.");
+      return;
+    }
+
+    responses = [];
+    currentIndex = 0;
+    quizSection.style.display = 'block';
+    startBtn.style.display = 'none';
+    showQuestion();
+
+  } catch (err) {
+    console.error("Failed to load questions:", err);
+    alert("Error loading quiz.");
   }
-
-  responses = [];
-  currentIndex = 0;
-  quizSection.style.display = 'block';
-  startBtn.style.display = 'none';
-  showQuestion();
 };
 
 nextBtn.onclick = () => {
@@ -57,11 +63,11 @@ nextBtn.onclick = () => {
 function showQuestion() {
   const q = questions[currentIndex];
   questionBox.innerHTML = `<h3>${q.question}</h3>`;
-
   optionsBox.innerHTML = "";
+
   q.options.forEach((opt, i) => {
     optionsBox.innerHTML += `
-      <label><input type="radio" name="option" value="${opt}"/> ${opt}</label><br/>
+      <label><input type="radio" name="option" value="${opt}"> ${opt}</label><br/>
     `;
   });
 }
@@ -70,12 +76,17 @@ async function submitAnswers() {
   const studentName = document.getElementById('studentName').value;
   const testId = document.getElementById('testId').value;
 
-  await fetch('https://your-backend-url.onrender.com/api/responses', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ studentName, testId, answers: responses })
-  });
+  try {
+    await fetch('https://your-backend.onrender.com/api/responses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentName, testId, answers: responses })
+    });
 
-  quizSection.style.display = 'none';
-  thankYou.style.display = 'block';
+    quizSection.style.display = 'none';
+    thankYou.style.display = 'block';
+  } catch (err) {
+    console.error("Error submitting responses:", err);
+    alert("Submission failed.");
+  }
 }
