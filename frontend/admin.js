@@ -1,25 +1,27 @@
-const BASE_URL = `https://quiz-app-4087.onrender.com`; // replace with yours
-
-function createTest() {
+// admin.js
+async function uploadQuiz() {
   const testId = document.getElementById('testId').value.trim();
-  if (!testId) return alert("Please enter a test ID.");
+  const questionData = document.getElementById('questionData').value.trim();
 
-  fetch(`${BASE_URL}/api/quiz/test/${testId}/create`, {
-    method: 'POST'
-  })
-    .then(res => res.json())
-    .then(data => {
-      document.getElementById('message').textContent = data.message || "Test created.";
-    })
-    .catch(err => {
-      console.error("Error creating test:", err);
-      alert("Error creating test");
+  if (!testId || !questionData) {
+    alert("Test ID and question data required");
+    return;
+  }
+
+  try {
+    const res = await fetch('https://YOUR_BACKEND_URL/api/questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        testId: testId,
+        questions: JSON.parse(questionData)
+      })
     });
-}
 
-function downloadResponses() {
-  const testId = document.getElementById('testId').value.trim();
-  if (!testId) return alert("Enter test ID first");
-
-  window.open(`${BASE_URL}/api/quiz/test/${testId}/responses`, '_blank');
+    const data = await res.json();
+    alert(data.message || 'Uploaded');
+  } catch (err) {
+    alert("Error uploading quiz");
+    console.error(err);
+  }
 }
