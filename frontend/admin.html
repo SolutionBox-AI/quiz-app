@@ -2,19 +2,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Upload Quiz</title>
+  <style>
+    body { font-family: Arial; padding: 40px; text-align: center; }
+    textarea, input, button { margin: 10px; padding: 10px; width: 80%; }
+  </style>
 </head>
 <body>
-  <h1>Create a New Quiz</h1>
-  <label>Test ID:</label>
-  <input type="text" id="testId" placeholder="Enter test ID" /><br><br>
-
-  <label>Questions (JSON format):</label><br>
-  <textarea id="questionData" rows="10" cols="50" placeholder='[{"question":"Q1?","options":["A","B","C","D"],"answer":"A"}]'></textarea><br><br>
-
+  <h1>Admin Panel: Upload Quiz</h1>
+  <input type="text" id="testId" placeholder="Enter Test ID" /><br>
+  <textarea id="questionData" rows="10" placeholder='[{"question":"Q1?","options":["A","B","C","D"],"answer":"A"}]'></textarea><br>
   <button onclick="uploadQuiz()">Upload</button>
 
-  <script src="admin.js"></script>
+  <script>
+    async function uploadQuiz() {
+      const testId = document.getElementById('testId').value.trim();
+      const questionData = document.getElementById('questionData').value.trim();
+
+      if (!testId || !questionData) {
+        alert("Test ID and question data required");
+        return;
+      }
+
+      try {
+        const res = await fetch('https://YOUR_BACKEND_URL/api/questions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ testId, questions: JSON.parse(questionData) })
+        });
+
+        const data = await res.json();
+        alert(data.message || 'Uploaded successfully');
+      } catch (err) {
+        alert("Error uploading quiz");
+        console.error(err);
+      }
+    }
+  </script>
 </body>
 </html>
