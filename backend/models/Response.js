@@ -1,18 +1,31 @@
-const mongoose = require("mongoose");
-
-const answerSchema = new mongoose.Schema({
-  question: String,
-  selected: String
-}, { _id: false });
+const mongoose = require('mongoose');
 
 const responseSchema = new mongoose.Schema({
-  testId: { type: String, required: true },
-  name: { type: String, required: true },
-  userCode: { type: String, required: true },
-  answers: [answerSchema],
-  submittedAt: { type: Date, default: Date.now }
+  studentName: {
+    type: String,
+    required: true,
+  },
+  testId: {
+    type: String,
+    required: true,
+  },
+  answers: [
+    {
+      questionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        ref: 'Question'
+      },
+      selectedOption: {
+        type: String,
+        required: true,
+      }
+    }
+  ],
+  submittedAt: {
+    type: Date,
+    default: Date.now,
+  }
 });
 
-module.exports = mongoose.model("Response", responseSchema);
-
-
+module.exports = mongoose.model('Response', responseSchema);
