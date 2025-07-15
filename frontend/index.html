@@ -2,88 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Quiz App Login</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 50px;
-      text-align: center;
-    }
-    h2 {
-      margin-bottom: 30px;
-    }
-    .login-section {
-      margin-bottom: 50px;
-      padding: 20px;
-      border: 1px solid #ddd;
-      width: 300px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    input {
-      display: block;
-      margin: 10px auto;
-      padding: 10px;
-      font-size: 16px;
-      width: 80%;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz App</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="quiz-container">
+    <h1>Start Your Quiz</h1>
 
-  <h2>Welcome to Quiz App</h2>
+    <label for="studentName">Your Name:</label>
+    <input type="text" id="studentName" placeholder="Enter your name" />
 
-  <!-- Admin Login -->
-  <div class="login-section">
-    <h3>Admin Login</h3>
-    <input type="text" id="adminUsername" placeholder="Username" />
-    <input type="password" id="adminPassword" placeholder="Password" />
-    <button onclick="adminLogin()">Login as Admin</button>
+    <label for="testId">Select Test ID:</label>
+    <input type="text" id="testId" placeholder="Enter Test ID" />
+
+    <button id="startBtn">Start Quiz</button>
+
+    <div id="quizSection" style="display: none;">
+      <div id="questionBox"></div>
+      <div id="optionsBox"></div>
+      <button id="nextBtn">Next</button>
+    </div>
+
+    <div id="thankYou" style="display: none;">
+      <h3>Thank you for submitting the quiz!</h3>
+    </div>
   </div>
 
-  <!-- Student Login -->
-  <div class="login-section">
-    <h3>Student Login</h3>
-    <input type="text" id="studentName" placeholder="Your Name" />
-    <input type="text" id="studentCode" placeholder="Your User Code" />
-    <button onclick="studentLogin()">Login as Student</button>
-  </div>
-
-  <script>
-    
-   function adminLogin() {
-  const user = document.getElementById("adminUsername").value.trim();
-  const pass = document.getElementById("adminPassword").value.trim();
-
-  if (user === "admin" && pass === "admin123") {
-    sessionStorage.setItem("role", "admin");
-    sessionStorage.setItem("admin", user); // ✅ This stores 'admin' as name
-    window.location.href = "admin.html";
-  } else {
-    alert("❌ Invalid admin credentials.");
-  }
-}
-
-
-    function studentLogin() {
-      const name = document.getElementById("studentName").value.trim();
-      const code = document.getElementById("studentCode").value.trim();
-
-      if (!name || !code) {
-        alert("❌ Please enter both name and user code.");
-        return;
-      }
-
-      sessionStorage.setItem("role", "student");
-      sessionStorage.setItem("name", name);
-      sessionStorage.setItem("userCode", code);
-      window.location.href = "quiz.html";
-    }
-  </script>
-
+  <script src="script.js"></script>
 </body>
 </html>
