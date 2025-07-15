@@ -1,4 +1,4 @@
-d{
+{
   "name": "student-quiz-app",
   "version": "1.0.0",
   "main": "backend/server.js",
